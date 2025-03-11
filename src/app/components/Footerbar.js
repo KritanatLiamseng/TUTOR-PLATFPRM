@@ -7,14 +7,14 @@ const FooterBar = ({ active }) => {
     const router = useRouter();
 
     const menuItems = [
-        { name: "Home", icon: <FaHome />, path: "/home" },
+        { name: "Home", icon: <FaHome />, path: "/hometutor" },
         { name: "การจอง", icon: <FaBook />, path: "/booking" },
         { name: "แชท", icon: <FaComments />, path: "/chat" },
         { name: "ตั้งค่า", icon: <FaUser />, path: "/settingtutor" },
     ];
 
     return (
-        <div className="w-full bg-gradient-to-r from-green-200 to-blue-200 flex justify-around items-center py-3 shadow-md fixed bottom-0">
+        <div className="w-full bg-gradient-to-r from-green-400 to-blue-400 flex justify-around items-center py-3 shadow-md fixed bottom-0">
             {menuItems.map((item) => (
                 <button
                     key={item.name}

@@ -89,7 +89,7 @@ const TutorProfilePage = () => {
                     แก้ไข
                 </button>
             </div>
-            <FooterBar active="โปรไฟล์" />
+           
         </div>
     );
 };

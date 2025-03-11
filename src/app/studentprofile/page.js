@@ -1,13 +1,17 @@
 "use client";
 import { useRouter } from "next/navigation";
 import FooterNav from "@/app/components/FooterNav";
-import { FaUser, FaPhone, FaEnvelope, FaIdCard, FaUserEdit } from "react-icons/fa";
+import { FaUser, FaPhone, FaEnvelope, FaIdCard, FaUserEdit, FaArrowLeft } from "react-icons/fa";
 
 const StudentProfilePage = () => {
     const router = useRouter();
 
     const handleEditClick = () => {
         router.push("/studentprofile/edit");
+    };
+
+    const handleBack = () => {
+        router.back();
     };
 
     const profileData = [
@@ -21,8 +25,13 @@ const StudentProfilePage = () => {
         <div className="min-h-screen flex flex-col items-center bg-gradient-to-b from-blue-300 to-white">
             
             {/* Header */}
-            <header className="bg-white/50 backdrop-blur-lg shadow-md w-full text-center py-6">
-                <h2 className="text-3xl font-bold text-gray-700">👤 โปรไฟล์ของฉัน</h2>
+            <header className="w-full flex items-center bg-white/50 backdrop-blur-lg shadow-md py-4 px-6">
+                <button onClick={handleBack} className="text-gray-600 hover:text-gray-800 transition">
+                    <FaArrowLeft className="text-2xl" />
+                </button>
+                <h2 className="flex-1 text-center text-3xl font-bold text-gray-700">
+                    👤 โปรไฟล์ของฉัน
+                </h2>
             </header>
 
             {/* กล่องข้อมูลโปรไฟล์ */}

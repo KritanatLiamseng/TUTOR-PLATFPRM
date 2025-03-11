@@ -1,0 +1,42 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model users {
+  user_id         Int      @id @default(autoincrement())
+  name            String
+  surname         String
+  email           String   @unique
+  phone           String?
+  username        String   @unique
+  password        String
+  role            String   @default("student") // ตั้งค่า default เป็น "student"
+  status          String   @default("Pending")
+  profile_image   String?
+  education_level String?
+  created_at      DateTime @default(now())
+
+  // ความสัมพันธ์กับ tutors
+  tutors tutors?
+}
+
+model tutors {
+  tutor_id               Int     @id @default(autoincrement())
+  user_id                Int     @unique
+  bio                    String?
+  experience_years       Int?
+  rate_per_hour          Float?
+  available_time         String?
+  is_active              Boolean @default(true)
+  verification_documents String?
+  education_background   String?
+  rating_average         Float?
+
+  // ความสัมพันธ์กับ users
+  users users @relation(fields: [user_id], references: [user_id])
+}

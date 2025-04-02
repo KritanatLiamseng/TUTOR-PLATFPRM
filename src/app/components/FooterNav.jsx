@@ -28,7 +28,7 @@ export default function FooterNav() {
           </div>
         </Link>
 
-        <Link href="/setting">
+        <Link href="/studentsetting">
           <div className="flex flex-col items-center text-blue-700 cursor-pointer">
             <FaUser className="text-2xl" />
             <span className="text-sm">การตั้งค่า</span>

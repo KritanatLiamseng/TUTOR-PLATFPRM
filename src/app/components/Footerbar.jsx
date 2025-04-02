@@ -10,7 +10,7 @@ const FooterBar = ({ active }) => {
         { name: "Home", icon: <FaHome />, path: "/home" },
         { name: "การจอง", icon: <FaBook />, path: "/booking" },
         { name: "แชท", icon: <FaComments />, path: "/chat" },
-        { name: "ตั้งค่า", icon: <FaUser />, path: "/settingtutor" },
+        { name: "ตั้งค่า", icon: <FaUser />, path: "/tutorsetting" },
     ];
 
     return (

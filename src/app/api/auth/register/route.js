@@ -1,7 +1,6 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/prisma/client";
+import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-
-const prisma = new PrismaClient();
 
 export async function POST(request) {
   try {
@@ -18,19 +17,25 @@ export async function POST(request) {
       experienceYears,
     } = await request.json();
 
-    const existingUser = await prisma.users.findUnique({
-      where: { username },
+    // ตรวจสอบว่ามีผู้ใช้นี้อยู่แล้วหรือไม่
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        OR: [{ username }, { email }],
+      },
     });
 
     if (existingUser) {
-      return new Response(JSON.stringify({ error: "ชื่อผู้ใช้นี้มีอยู่แล้ว" }), {
-        status: 400,
-      });
+      return NextResponse.json(
+        { error: "ชื่อผู้ใช้หรืออีเมลมีอยู่แล้วในระบบ" },
+        { status: 409 }
+      );
     }
 
+    // เข้ารหัสรหัสผ่าน
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newUser = await prisma.users.create({
+    // สร้างบัญชีผู้ใช้งาน
+    const newUser = await prisma.user.create({
       data: {
         name,
         surname,
@@ -38,29 +43,27 @@ export async function POST(request) {
         phone,
         username,
         password: hashedPassword,
-        role,
-        status: "Active",
+        role: role === "tutor" ? "tutor" : "student",
       },
     });
 
+    // ถ้าเป็นติวเตอร์ → เพิ่มข้อมูลลงตาราง tutor
     if (isTutor) {
-      await prisma.tutors.create({
+      await prisma.tutor.create({
         data: {
           user_id: newUser.user_id,
           bio,
-          experience_years: experienceYears,
-          is_active: true,
+          experience_years: parseInt(experienceYears, 10) || 0,
         },
       });
     }
 
-    return new Response(JSON.stringify({ success: "User registered successfully" }), {
-      status: 201,
-    });
+    return NextResponse.json({ message: "สมัครสมาชิกสำเร็จ" });
   } catch (error) {
-    console.error("Server Error:", error);
-    return new Response(JSON.stringify({ error: "Server Error" }), {
-      status: 500,
-    });
+    console.error("Register Error:", error);
+    return NextResponse.json(
+      { error: "เกิดข้อผิดพลาดที่ server" },
+      { status: 500 }
+    );
   }
 }

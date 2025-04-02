@@ -1,6 +1,6 @@
 "use client";
 
-import FooterBar from "../components/Footerbar";
+import FooterBar from "@/app/components/Footerbar";
 import { useRouter } from "next/navigation";
 import { 
     FaUser, 

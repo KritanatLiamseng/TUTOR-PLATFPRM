@@ -7,25 +7,9 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model users {
-  user_id         Int      @id @default(autoincrement())
-  name            String
-  surname         String
-  email           String   @unique
-  phone           String?
-  username        String   @unique
-  password        String
-  role            String   @default("student") // ตั้งค่า default เป็น "student"
-  status          String   @default("Pending")
-  profile_image   String?
-  education_level String?
-  created_at      DateTime @default(now())
+model Tutor {
+  @@map("tutors") // 🟢 สำคัญที่สุด
 
-  // ความสัมพันธ์กับ tutors
-  tutors tutors?
-}
-
-model tutors {
   tutor_id               Int     @id @default(autoincrement())
   user_id                Int     @unique
   bio                    String?
@@ -37,6 +21,25 @@ model tutors {
   education_background   String?
   rating_average         Float?
 
-  // ความสัมพันธ์กับ users
-  users users @relation(fields: [user_id], references: [user_id])
+  user User @relation(fields: [user_id], references: [user_id])
+}
+
+
+model User {
+  @@map("users")
+
+  user_id         Int      @id @default(autoincrement())
+  name            String
+  surname         String
+  email           String   @unique
+  phone           String?
+  username        String   @unique
+  password        String
+  role            String   @default("student")
+  status          String   @default("Pending")
+  profile_image   String?
+  education_level String?
+  created_at      DateTime @default(now())
+
+  tutor Tutor?
 }

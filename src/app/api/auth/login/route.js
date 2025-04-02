@@ -1,38 +1,32 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/prisma/client";
+import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-
-const prisma = new PrismaClient();
 
 export async function POST(request) {
   try {
     const { username, password } = await request.json();
 
-    const user = await prisma.users.findUnique({
+    const user = await prisma.user.findUnique({
       where: { username },
     });
 
     if (!user) {
-      return new Response(JSON.stringify({ error: "ไม่พบชื่อผู้ใช้นี้" }), {
-        status: 404,
-      });
+      return NextResponse.json({ error: "ไม่พบบัญชีผู้ใช้" }, { status: 404 });
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
-
     if (!isPasswordValid) {
-      return new Response(JSON.stringify({ error: "รหัสผ่านไม่ถูกต้อง" }), {
-        status: 401,
-      });
+      return NextResponse.json({ error: "รหัสผ่านไม่ถูกต้อง" }, { status: 401 });
     }
 
-    return new Response(
-      JSON.stringify({ success: "เข้าสู่ระบบสำเร็จ", role: user.role }),
-      { status: 200 }
-    );
-  } catch (error) {
-    console.error("Server Error:", error);
-    return new Response(JSON.stringify({ error: "Server Error" }), {
-      status: 500,
+    // ✅ ส่ง role กลับให้ frontend redirect ได้
+    return NextResponse.json({
+      message: "เข้าสู่ระบบสำเร็จ",
+      role: user.role, // <-- สำคัญมากสำหรับ redirect
+      user_id: user.user_id,
     });
+  } catch (error) {
+    console.error("Login Error:", error);
+    return NextResponse.json({ error: "เกิดข้อผิดพลาดที่ server" }, { status: 500 });
   }
 }

@@ -1,14 +1,22 @@
 import NextAuth from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
 
 const handler = NextAuth({
-  providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    }),
-  ],
+  providers: [], // ❌ ไม่มี Provider เช่น Google แล้ว
+
   secret: process.env.NEXTAUTH_SECRET,
+
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id || user.user_id;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      session.user.id = token.id;
+      return session;
+    },
+  },
 });
 
 export const GET = handler;

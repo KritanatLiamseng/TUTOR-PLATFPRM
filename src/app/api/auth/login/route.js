@@ -19,11 +19,14 @@ export async function POST(request) {
       return NextResponse.json({ error: "รหัสผ่านไม่ถูกต้อง" }, { status: 401 });
     }
 
-    // ✅ ส่ง role กลับให้ frontend redirect ได้
+    // สมมุติว่าเราสร้าง token สำหรับ auth (ในอนาคตใช้ JWT จริง)
+    const mockToken = `${user.username}-mock-token`;
+
     return NextResponse.json({
       message: "เข้าสู่ระบบสำเร็จ",
-      role: user.role, // <-- สำคัญมากสำหรับ redirect
+      role: user.role,
       user_id: user.user_id,
+      token: mockToken, // <-- ส่งกลับไปเก็บไว้ใน localStorage
     });
   } catch (error) {
     console.error("Login Error:", error);

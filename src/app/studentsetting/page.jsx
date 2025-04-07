@@ -1,16 +1,15 @@
 "use client";
 import Link from "next/link";
 import FooterNav from "@/app/components/FooterNav";
-import { 
-    FaUser, 
-    FaHistory, 
-    FaFileAlt, 
-    FaQuestionCircle, 
-    FaExclamationCircle, 
-    FaSignOutAlt
+import {
+  FaUser,
+  FaHistory,
+  FaFileAlt,
+  FaQuestionCircle,
+  FaExclamationCircle,
+  FaSignOutAlt,
 } from "react-icons/fa";
-import { useRouter } from "next/navigation"; 
-import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 export default function Setting() {
   const router = useRouter();
@@ -23,43 +22,43 @@ export default function Setting() {
     { icon: <FaExclamationCircle />, label: "รายงาน", link: "/report" },
   ];
 
-  // ฟังก์ชันออกจากระบบ
   const handleLogout = () => {
-    localStorage.removeItem("userToken"); 
+    localStorage.removeItem("userToken");
+    localStorage.removeItem("userId");
     setTimeout(() => {
       router.push("/login");
-    }, 1000);
+    }, 800);
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center bg-gradient-to-b from-blue-300 to-white">
-
+    <div className="min-h-screen flex flex-col items-center bg-gradient-to-b from-sky-100 via-white to-white">
       {/* Header */}
-      <header className="w-full text-center py-6">
-        <h2 className="text-3xl font-bold text-gray-700">⚙️ การตั้งค่า</h2>
+      <header className="w-full py-6 text-center shadow-sm bg-white/90 backdrop-blur-sm">
+        <h2 className="text-2xl md:text-3xl font-bold text-gray-800">⚙️ การตั้งค่า</h2>
       </header>
 
-      {/* รายการเมนู */}
-      <div className="w-full max-w-2xl mt-6 space-y-4 px-4">
+      {/* Menu Section */}
+      <main className="w-full max-w-md px-6 py-8 space-y-4 flex-grow">
         {menuItems.map((item, index) => (
           <Link href={item.link} key={index} className="block">
-            <div className="flex items-center p-4 rounded-lg shadow-md hover:bg-blue-100 transition cursor-pointer bg-white/50 backdrop-blur-lg">
-              <div className="text-2xl text-blue-500 mr-4">{item.icon}</div>
-              <span className="text-lg flex-1 text-gray-700">{item.label}</span>
+            <div className="flex items-center bg-white rounded-xl shadow-sm px-5 py-4 hover:shadow-md hover:bg-blue-50 transition duration-200">
+              <div className="text-blue-500 text-xl mr-4">{item.icon}</div>
+              <span className="text-gray-800 text-base font-medium">{item.label}</span>
             </div>
           </Link>
         ))}
 
-        {/* ปุ่มออกจากระบบ */}
-        <button 
+        {/* Logout Button */}
+        <button
           onClick={handleLogout}
-          className="w-full flex items-center justify-center bg-red-500 text-white px-4 py-3 rounded-lg shadow-md hover:bg-red-600 transition mt-6"
+          className="w-full mt-6 bg-red-500 hover:bg-red-600 text-white py-3 rounded-xl shadow-md text-base font-semibold flex items-center justify-center gap-2 transition"
         >
-          <FaSignOutAlt className="mr-2" /> ออกจากระบบ
+          <FaSignOutAlt />
+          ออกจากระบบ
         </button>
-      </div>
+      </main>
 
-      <FooterNav />
+      <FooterNav active="การตั้งค่า" />
     </div>
   );
 }

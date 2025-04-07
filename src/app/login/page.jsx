@@ -25,12 +25,14 @@ export default function LoginPage() {
         body: JSON.stringify(formData),
       });
 
+      const data = await res.json();
+
       if (res.ok) {
-        const { role } = await res.json();
-        router.push(role === "tutor" ? "/hometutor" : "/home");
+        localStorage.setItem("userId", data.user_id);
+        localStorage.setItem("authToken", data.token);
+        router.push(data.role === "tutor" ? "/hometutor" : "/home");
       } else {
-        const error = await res.json();
-        alert(error.error || "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");
+        alert(data.error || "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");
       }
     } catch (err) {
       console.error(err);
@@ -43,7 +45,6 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-cyan-100 to-blue-100 flex items-center justify-center px-4">
       <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2">
-        {/* ซ้าย - แนะนำระบบ */}
         <div className="flex flex-col justify-center px-10 py-16 text-gray-800">
           <h1 className="text-4xl font-bold mb-4">ยินดีต้อนรับกลับ!</h1>
           <p className="text-lg mb-2">
@@ -54,8 +55,7 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* ขวา - ฟอร์ม Login */}
-        <div className="flex flex-col justify-center px-10 py-16 ">
+        <div className="flex flex-col justify-center px-10 py-16">
           <div className="mb-6 text-center">
             <Image src="/logo.webp" alt="Logo" width={60} height={60} className="mx-auto" />
             <h2 className="text-2xl font-bold mt-4">เข้าสู่ระบบ</h2>

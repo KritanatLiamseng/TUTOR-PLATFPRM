@@ -3,9 +3,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { FaUser, FaLock } from "react-icons/fa";
+import axios from "axios";
 
-export default function Register() {
+export default function RegisterPage() {
   const router = useRouter();
 
   const [formData, setFormData] = useState({
@@ -40,32 +40,23 @@ export default function Register() {
     }
 
     try {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
-      if (!res.ok) {
-        const error = await res.json();
-        alert(error.error || "เกิดข้อผิดพลาดในการสมัครสมาชิก");
-        return;
-      }
-
-      alert("สมัครสมาชิกสำเร็จ! กำลังนำไปสู่หน้าเข้าสู่ระบบ...");
+      const res = await axios.post("/api/auth/register", formData);
+      alert("สมัครสมาชิกสำเร็จ!");
       router.push("/login");
     } catch (err) {
-      console.error("Frontend Error:", err.message);
-      alert("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้");
+      const errorMsg =
+        err?.response?.data?.error || "เกิดข้อผิดพลาดในการสมัครสมาชิก";
+      alert(errorMsg);
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-cyan-100 to-blue-100 flex items-center justify-center px-4">
-      <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-0">
-        {/* ซ้าย: แนะนำ */}
-        <div className="p-10 flex flex-col justify-center text-gray-800">
-          <h1 className="text-3xl md:text-4xl font-bold mb-4">สร้างบัญชีของคุณ</h1>
+      <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-0 bg-white rounded-2xl shadow-xl overflow-hidden">
+
+        {/* ซ้าย - แนะนำระบบ */}
+        <div className="bg-gradient-to-br from-cyan-200 to-blue-100 p-10 flex flex-col justify-center text-gray-800">
+          <h1 className="text-4xl font-bold mb-4">สร้างบัญชีของคุณ</h1>
           <p className="text-lg mb-2">
             สมัครใช้งานแพลตฟอร์มหาติวเตอร์เพื่อพัฒนาการเรียนของคุณได้ดีขึ้น
           </p>
@@ -74,54 +65,82 @@ export default function Register() {
           </p>
         </div>
 
-        {/* ขวา: ฟอร์ม ไม่มี bg-white แล้ว */}
+        {/* ขวา - ฟอร์ม */}
         <div className="p-10 md:p-16 flex flex-col justify-center">
           <div className="flex justify-center mb-6">
             <Image src="/logo.webp" alt="Logo" width={60} height={60} />
           </div>
 
-          <h2 className="text-2xl font-bold text-gray-700 text-center mb-6">สมัครสมาชิก</h2>
+          <h2 className="text-2xl font-bold text-gray-700 text-center mb-6">
+            สมัครสมาชิก
+          </h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {["name", "surname", "email", "phone", "username", "password"].map((field) => (
-              <div key={field} className="relative">
-                {field === "password" ? (
-                  <FaLock className="absolute top-1/2 left-4 transform -translate-y-1/2 text-gray-400" />
-                ) : (
-                  <FaUser className="absolute top-1/2 left-4 transform -translate-y-1/2 text-gray-400" />
-                )}
-                <input
-                  type={field === "password" ? "password" : "text"}
-                  name={field}
-                  placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
-                  value={formData[field]}
-                  onChange={handleChange}
-                  required
-                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-full bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                />
-              </div>
+            {[
+              { name: "name", placeholder: "ชื่อ" },
+              { name: "surname", placeholder: "นามสกุล" },
+              { name: "email", placeholder: "อีเมล" },
+              { name: "phone", placeholder: "เบอร์โทร" },
+              { name: "username", placeholder: "ชื่อผู้ใช้" },
+              { name: "password", placeholder: "รหัสผ่าน", type: "password" },
+            ].map(({ name, placeholder, type = "text" }) => (
+              <input
+                key={name}
+                type={type}
+                name={name}
+                value={formData[name]}
+                onChange={handleChange}
+                placeholder={placeholder}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
             ))}
 
+            {/* เลือกบทบาท */}
             <div className="flex gap-2">
-              {["student", "tutor"].map((role) => (
+              {[
+                { label: "ผู้เรียน", value: "student" },
+                { label: "ติวเตอร์", value: "tutor" },
+              ].map(({ label, value }) => (
                 <button
-                  key={role}
+                  key={value}
                   type="button"
-                  onClick={() => handleRoleChange(role, role === "tutor")}
-                  className={`flex-1 py-2 rounded-full font-medium transition ${
-                    formData.role === role
+                  onClick={() => handleRoleChange(value, value === "tutor")}
+                  className={`flex-1 py-2 rounded-lg font-medium transition ${
+                    formData.role === value
                       ? "bg-blue-500 text-white"
                       : "bg-gray-200 text-blue-600 hover:bg-gray-300"
                   }`}
                 >
-                  {role === "student" ? "ผู้เรียน" : "ติวเตอร์"}
+                  {label}
                 </button>
               ))}
             </div>
 
+            {/* เฉพาะติวเตอร์ */}
+            {formData.isTutor && (
+              <>
+                <textarea
+                  name="bio"
+                  placeholder="ประวัติสอนโดยย่อ"
+                  value={formData.bio}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+                />
+                <input
+                  type="number"
+                  name="experienceYears"
+                  placeholder="ประสบการณ์สอน (ปี)"
+                  value={formData.experienceYears}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+                />
+              </>
+            )}
+
             <button
               type="submit"
-              className="w-full bg-green-500 text-white py-3 rounded-full hover:bg-green-600 transition"
+              className="w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition"
             >
               สมัครสมาชิก
             </button>
@@ -129,7 +148,7 @@ export default function Register() {
 
           <p className="text-sm text-center text-gray-700 mt-6">
             มีบัญชีแล้ว?{" "}
-            <Link href="/login" className="text-blue-500 font-medium hover:underline">
+            <Link href="/login" className="text-blue-500 font-medium">
               เข้าสู่ระบบ
             </Link>
           </p>

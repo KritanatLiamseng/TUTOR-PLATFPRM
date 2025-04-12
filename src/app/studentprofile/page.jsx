@@ -1,14 +1,14 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import FooterNav from "@/app/components/FooterNav";
 import {
+  FaArrowLeft,
   FaUser,
   FaPhone,
   FaEnvelope,
   FaIdCard,
   FaUserEdit,
-  FaArrowLeft,
 } from "react-icons/fa";
 
 const StudentProfilePage = () => {
@@ -58,78 +58,64 @@ const StudentProfilePage = () => {
     );
   }
 
-  const profileData = [
-    {
-      label: "ชื่อ",
-      value: profile.name,
-      icon: <FaUser className="text-blue-500 mr-3" />,
-    },
-    {
-      label: "เบอร์โทร",
-      value: profile.phone,
-      icon: <FaPhone className="text-green-500 mr-3" />,
-    },
-    {
-      label: "อีเมล์",
-      value: profile.email,
-      icon: <FaEnvelope className="text-red-500 mr-3" />,
-    },
-    {
-      label: "ชื่อผู้ใช้",
-      value: profile.username,
-      icon: <FaIdCard className="text-purple-500 mr-3" />,
-    },
-  ];
-
   return (
-    <div className="min-h-screen flex flex-col items-center bg-gradient-to-b from-sky-100 via-white to-white">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-white font-sans">
       {/* Header */}
-      <header className="relative w-full py-4 px-6 bg-white/90 shadow-md flex items-center justify-center">
+      <header className="w-full flex justify-between items-center px-6 py-4 bg-white shadow">
         <button
           onClick={handleBackClick}
-          className="absolute left-4 text-blue-600 hover:text-blue-800"
+          className="text-blue-600 hover:text-blue-800"
         >
           <FaArrowLeft size={20} />
         </button>
-        <h1 className="text-xl md:text-2xl font-semibold text-gray-800">
+        <h1 className="text-xl font-semibold text-gray-800">
           👤 โปรไฟล์ของฉัน
         </h1>
+        <div></div> {/* Placeholder to center the title */}
       </header>
 
-      {/* Content */}
-      <div className="w-full max-w-md px-6 py-8 flex flex-col items-center">
-        {/* Avatar */}
-        <div className="w-28 h-28 bg-blue-500 rounded-full flex items-center justify-center shadow-md text-white text-3xl font-bold mb-6">
-          {profile.name?.charAt(0).toUpperCase() || "?"}
+      {/* Profile Section */}
+      <div className="max-w-4xl mx-auto mt-8 bg-white shadow-lg rounded-xl p-6 md:flex md:gap-8 items-center">
+        {/* Avatar and Name */}
+        <div className="flex flex-col items-center md:items-start">
+          <div className="relative w-32 h-32 rounded-full overflow-hidden shadow">
+            <div className="w-full h-full bg-blue-400 flex items-center justify-center text-white text-4xl font-bold">
+              {profile.name?.charAt(0).toUpperCase() || "?"}
+            </div>
+          </div>
+          <h2 className="text-2xl font-semibold text-gray-700 mt-4">{profile.name}</h2>
+          <p className="text-sm text-gray-500">{profile.email}</p>
         </div>
 
-        {/* Info Card */}
-        <div className="w-full space-y-4">
-          {profileData.map((item, index) => (
-            <div
-              key={index}
-              className="flex items-center bg-white shadow-sm border border-gray-200 rounded-xl px-4 py-3 hover:shadow-md transition"
-            >
-              {item.icon}
-              <div className="ml-2">
-                <p className="text-gray-500 text-sm">{item.label}</p>
-                <p className="text-gray-800 font-medium">{item.value || "N/A"}</p>
+        {/* Info Section */}
+        <div className="flex-1 mt-6 md:mt-0 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="bg-gray-50 p-4 rounded-lg shadow flex items-center">
+              <FaPhone className="text-green-500 mr-3" />
+              <div>
+                <p className="text-gray-600 text-sm">เบอร์โทร</p>
+                <p className="font-medium text-gray-800">{profile.phone}</p>
               </div>
             </div>
-          ))}
+            <div className="bg-gray-50 p-4 rounded-lg shadow flex items-center">
+              <FaIdCard className="text-purple-500 mr-3" />
+              <div>
+                <p className="text-gray-600 text-sm">ชื่อผู้ใช้</p>
+                <p className="font-medium text-gray-800">{profile.username}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-right">
+            <button
+              onClick={handleEditClick}
+              className="mt-6 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg shadow"
+            >
+              <FaUserEdit className="inline-block mr-2" /> แก้ไขข้อมูล
+            </button>
+          </div>
         </div>
-
-        {/* Button */}
-        <button
-          onClick={handleEditClick}
-          className="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold flex justify-center items-center gap-2 shadow-md"
-        >
-          <FaUserEdit />
-          แก้ไขข้อมูล
-        </button>
       </div>
-
-      <FooterNav active="โปรไฟล์" />
     </div>
   );
 };

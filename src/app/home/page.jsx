@@ -154,7 +154,7 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="bg-blue-400 text-white py-6 text-center mt-auto">
-        Tutor Platform © {new Date().getFullYear()} | Powered by Fruitables UI
+        Tutor Platform © {new Date().getFullYear()} | by Kritanat Liamseng
       </footer>
     </div>
   );

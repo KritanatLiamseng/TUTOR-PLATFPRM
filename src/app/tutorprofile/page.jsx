@@ -1,13 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FaArrowLeft } from "react-icons/fa";
-import FooterBar from "@/app/components/Footerbar";
+import { useEffect, useState } from "react";
+import {
+  FaArrowLeft,
+  FaPhone,
+  FaIdCard,
+  FaEnvelope,
+  FaUserEdit,
+} from "react-icons/fa";
 
 const TutorProfilePage = () => {
   const router = useRouter();
-  const [tutor, setTutor] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -16,7 +21,7 @@ const TutorProfilePage = () => {
       fetch(`/api/tutor/${userId}`)
         .then((res) => res.json())
         .then((data) => {
-          setTutor(data);
+          setProfile(data);
           setLoading(false);
         })
         .catch((err) => {
@@ -38,114 +43,87 @@ const TutorProfilePage = () => {
 
   if (loading) {
     return (
-      <p className="text-center mt-10 text-gray-500 text-lg animate-pulse">
+      <p className="text-center mt-10 text-gray-600 animate-pulse">
         กำลังโหลดข้อมูล...
       </p>
     );
   }
 
-  if (!tutor) {
+  if (!profile) {
     return (
-      <p className="text-center mt-10 text-red-500 font-semibold">
+      <p className="text-center mt-10 text-red-500">
         ไม่พบข้อมูลติวเตอร์ หรือคุณยังไม่ได้เข้าสู่ระบบ
       </p>
     );
   }
 
-  const infoItems = [
-    { label: "ชื่อ", value: tutor.name },
-    { label: "เบอร์โทร", value: tutor.phone },
-    { label: "อีเมล์", value: tutor.email },
-    { label: "ชื่อผู้ใช้", value: tutor.username },
-    { label: "ประวัติการศึกษา", value: tutor.education_level || "ไม่ระบุ" },
-  ];
-
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-blue-100 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-white font-sans">
       {/* Header */}
-      <div className="relative text-center py-6 bg-white/70 shadow-md sticky top-0 z-10">
+      <header className="w-full flex justify-between items-center px-6 py-4 bg-white shadow">
         <button
           onClick={handleBackClick}
-          className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600 hover:text-blue-800 transition"
+          className="text-blue-600 hover:text-blue-800"
         >
           <FaArrowLeft size={20} />
         </button>
-        <h1 className="text-3xl font-bold text-gray-700">👨‍🏫 โปรไฟล์ติวเตอร์</h1>
-      </div>
+        <h1 className="text-xl font-semibold text-gray-800">
+          👨‍🏫 โปรไฟล์ติวเตอร์
+        </h1>
+        <div></div> {/* ใช้สำหรับจัดกึ่งกลาง */}
+      </header>
 
-      {/* Content */}
-      <div className="w-full max-w-2xl mx-auto px-6 py-6">
-        {/* Avatar */}
-        <div className="flex justify-center mb-6">
-          <div className="w-32 h-32 bg-blue-400 rounded-full overflow-hidden shadow-lg flex items-center justify-center">
-            <img
-              src={tutor.profile_image || "/default-profile.png"}
-              alt="โปรไฟล์"
-              className="w-full h-full object-cover"
-            />
+      {/* Tutor Info Card */}
+      <div className="max-w-4xl mx-auto mt-8 bg-white shadow-lg rounded-xl p-6 md:flex md:gap-8 items-center">
+        {/* Avatar + Name */}
+        <div className="flex flex-col items-center md:items-start">
+          <div className="relative w-32 h-32 rounded-full overflow-hidden shadow">
+            <div className="w-full h-full bg-blue-400 flex items-center justify-center text-white text-4xl font-bold">
+              {profile.name?.charAt(0).toUpperCase() || "?"}
+            </div>
+          </div>
+          <h2 className="text-2xl font-semibold text-gray-700 mt-4">
+            {profile.name}
+          </h2>
+          <p className="text-sm text-gray-500">{profile.email}</p>
+        </div>
+
+        {/* Info Grid */}
+        <div className="flex-1 mt-6 md:mt-0 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="bg-gray-50 p-4 rounded-lg shadow flex items-center">
+              <FaPhone className="text-green-500 mr-3" />
+              <div>
+                <p className="text-gray-600 text-sm">เบอร์โทร</p>
+                <p className="font-medium text-gray-800">{profile.phone}</p>
+              </div>
+            </div>
+            <div className="bg-gray-50 p-4 rounded-lg shadow flex items-center">
+              <FaIdCard className="text-purple-500 mr-3" />
+              <div>
+                <p className="text-gray-600 text-sm">ชื่อผู้ใช้</p>
+                <p className="font-medium text-gray-800">{profile.username}</p>
+              </div>
+            </div>
+            <div className="bg-gray-50 p-4 rounded-lg shadow flex items-center col-span-2">
+              <FaEnvelope className="text-red-500 mr-3" />
+              <div>
+                <p className="text-gray-600 text-sm">ระดับการศึกษา</p>
+                <p className="font-medium text-gray-800">{profile.education_level || "ไม่ระบุ"}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-right">
+            <button
+              onClick={handleEditClick}
+              className="mt-6 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg shadow"
+            >
+              <FaUserEdit className="inline-block mr-2" /> แก้ไขข้อมูล
+            </button>
           </div>
         </div>
-
-        {/* Info */}
-        <div className="space-y-4">
-          {infoItems.map((item, index) => (
-            <div
-              key={index}
-              className="bg-white/70 backdrop-blur-md rounded-xl shadow-sm px-6 py-4"
-            >
-              <p className="text-sm text-gray-500">{item.label}</p>
-              <p className="text-lg font-semibold text-gray-800">{item.value}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Documents */}
-        <h2 className="text-xl font-semibold text-gray-700 mt-10 mb-4">📄 เอกสารที่เกี่ยวข้อง</h2>
-        <div className="space-y-4">
-          {tutor.document_id_card && (
-            <div className="bg-white rounded-xl shadow p-4">
-              <p className="font-semibold mb-2">บัตรประชาชน</p>
-              <img
-                src={tutor.document_id_card}
-                alt="บัตรประชาชน"
-                className="rounded-md w-full"
-              />
-            </div>
-          )}
-          {tutor.document_profile && (
-            <div className="bg-white rounded-xl shadow p-4">
-              <p className="font-semibold mb-2">รูปถ่ายใบหน้า</p>
-              <img
-                src={tutor.document_profile}
-                alt="ใบหน้า"
-                className="rounded-md w-full"
-              />
-            </div>
-          )}
-          {tutor.document_certificate && (
-            <div className="bg-white rounded-xl shadow p-4">
-              <p className="font-semibold mb-2">เอกสารรับรองอื่น ๆ</p>
-              <a
-                href={tutor.document_certificate}
-                target="_blank"
-                className="text-blue-500 hover:underline"
-              >
-                ดูเอกสารรับรอง (PDF)
-              </a>
-            </div>
-          )}
-        </div>
-
-        {/* Edit Button */}
-        <button
-          onClick={handleEditClick}
-          className="mt-8 w-full py-3 bg-blue-500 hover:bg-blue-600 text-white text-lg rounded-full shadow-lg transition"
-        >
-          ✏️ แก้ไขโปรไฟล์
-        </button>
       </div>
-
-      <FooterBar active="โปรไฟล์" />
     </div>
   );
 };

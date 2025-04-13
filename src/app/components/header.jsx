@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
-const Header = () => {
+const Header = ({ dropdownItems }) => {
   const [user, setUser] = useState(null);
   const [openMenu, setOpenMenu] = useState(false);
 
@@ -15,11 +15,6 @@ const Header = () => {
         .catch((err) => console.error("โหลดข้อมูลผู้ใช้ล้มเหลว", err));
     }
   }, []);
-
-  const handleLogout = () => {
-    localStorage.removeItem("userId");
-    window.location.href = "/login";
-  };
 
   return (
     <header className="bg-white/80 backdrop-blur-md shadow px-6 py-3 flex justify-between items-center relative z-20">
@@ -34,10 +29,32 @@ const Header = () => {
             👋 สวัสดี, {user.name}
           </button>
           {openMenu && (
-            <div className="absolute right-0 mt-2 bg-white border rounded shadow-md w-40">
-              <Link href="/studentprofile" className="block px-4 py-2 hover:bg-green-50">โปรไฟล์ของฉัน</Link>
-              <Link href="/studentsetting" className="block px-4 py-2 hover:bg-green-50">การตั้งค่า</Link>
-              <button onClick={handleLogout} className="block w-full text-left px-4 py-2 text-red-500 hover:bg-red-50">ออกจากระบบ</button>
+            <div className="absolute right-0 mt-2 bg-white border rounded shadow-md w-48">
+              {dropdownItems?.map((item, index) =>
+                item.onClick ? (
+                  <button
+                    key={index}
+                    onClick={item.onClick}
+                    className={`block w-full text-left px-4 py-2 hover:bg-gray-100 ${
+                      item.icon ? "flex items-center gap-2" : ""
+                    } ${item.label.includes("ออกจากระบบ") ? "text-red-500" : ""}`}
+                  >
+                    {item.icon}
+                    {item.label}
+                  </button>
+                ) : (
+                  <Link
+                    key={index}
+                    href={item.path}
+                    className={`block px-4 py-2 hover:bg-gray-100 ${
+                      item.icon ? "flex items-center gap-2" : ""
+                    }`}
+                  >
+                    {item.icon}
+                    {item.label}
+                  </Link>
+                )
+              )}
             </div>
           )}
         </div>

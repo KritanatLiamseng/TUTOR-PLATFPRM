@@ -1,7 +1,7 @@
 import prisma from "@/prisma/client";
 
-export async function GET(req, { params }) {
-  const { id } = params;
+export async function GET(req, context) {
+  const { id } = context.params; // ✅ ต้องดึง params แบบนี้
 
   console.log("📥 ได้รับ id จาก params:", id);
 

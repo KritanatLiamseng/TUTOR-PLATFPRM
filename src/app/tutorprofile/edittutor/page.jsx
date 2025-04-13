@@ -1,128 +1,129 @@
 "use client";
 
-import { FaArrowLeft, FaUpload } from "react-icons/fa";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { FaArrowLeft } from "react-icons/fa";
 
 const EditTutorProfilePage = () => {
-    const router = useRouter();
-    const [profileImage, setProfileImage] = useState(null);
-    const [documentIdCard, setDocumentIdCard] = useState(null);
-    const [documentCertificate, setDocumentCertificate] = useState(null);
+  const router = useRouter();
+  const [tutorData, setTutorData] = useState({
+    education_level: "",
+    experience_years: "",
+    available_time: "",
+    rate_per_hour: "",
+    subject_details: "",
+  });
 
-    const handleSave = () => {
-        router.push("/tutorprofile"); // กลับไปหน้าโปรไฟล์ติวเตอร์
-    };
+  const [loading, setLoading] = useState(true);
 
-    const handleBack = () => {
-        router.back(); // กลับไปหน้าก่อนหน้า
-    };
+  useEffect(() => {
+    const userId = localStorage.getItem("userId");
+    if (userId) {
+      fetch(`/api/user/${userId}`)
+        .then((res) => res.json())
+        .then((user) => {
+          setTutorData((prev) => ({
+            ...prev,
+            education_level: user.education_level || "",
+          }));
+          return fetch(`/api/tutor/${userId}`);
+        })
+        .then((res) => res.json())
+        .then((tutor) => {
+          setTutorData((prev) => ({
+            ...prev,
+            experience_years: tutor.experience_years || "",
+            available_time: tutor.available_time || "",
+            rate_per_hour: tutor.rate_per_hour || "",
+            subject_details: tutor.subject_details || "",
+          }));
+          setLoading(false);
+        })
+        .catch((err) => {
+          console.error("โหลดข้อมูลผิดพลาด:", err);
+          setLoading(false);
+        });
+    }
+  }, []);
 
-    const handleImageChange = (e, setImage) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = () => {
-                setImage(reader.result);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
+  const handleChange = (key, value) => {
+    setTutorData((prev) => ({ ...prev, [key]: value }));
+  };
 
-    return (
-        <div className="min-h-screen flex flex-col bg-gradient-to-b from-blue-300 to-white">
-            
-            {/* Header */}
-            <div className="w-full bg-gradient-to-r from-blue-500 to-blue-700 text-white p-5 flex items-center shadow-lg rounded-b-xl">
-                <button onClick={handleBack} className="mr-4 hover:opacity-80 transition">
-                    <FaArrowLeft className="text-2xl" />
-                </button>
-                <h2 className="text-xl font-semibold">แก้ไขโปรไฟล์ติวเตอร์</h2>
-            </div>
+  const handleSave = async () => {
+    const userId = localStorage.getItem("userId");
+    const res = await fetch(`/api/tutor/${userId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(tutorData),
+    });
 
-            {/* Form Edit Profile */}
-            <div className="p-6 w-full max-w-3xl mx-auto">
-                {/* รูปโปรไฟล์ */}
-                <div className="flex flex-col items-center mb-8">
-                    <div className="relative w-32 h-32 mb-4 border-4 border-blue-400 rounded-full overflow-hidden shadow-md">
-                        <img
-                            src={profileImage || "/default-profile.png"}
-                            alt="รูปติวเตอร์"
-                            className="w-full h-full object-cover"
-                        />
-                        <input
-                            type="file"
-                            accept="image/*"
-                            className="absolute inset-0 opacity-0 cursor-pointer"
-                            onChange={(e) => handleImageChange(e, setProfileImage)}
-                        />
-                    </div>
-                    <span className="text-gray-600 text-sm">เปลี่ยนรูปโปรไฟล์</span>
-                </div>
+    if (res.ok) {
+      alert("บันทึกข้อมูลเรียบร้อยแล้ว");
+      router.push("/tutorprofile");
+    } else {
+      alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+    }
+  };
 
-                {/* ฟอร์มกรอกข้อมูล */}
-                <div className="grid grid-cols-1 gap-6 bg-white/50 backdrop-blur-lg p-6 shadow-lg rounded-xl">
-                    {[
-                        { label: "ชื่อ-นามสกุล", placeholder: "กรอกชื่อ-นามสกุล" },
-                        { label: "วิชาที่สอน", placeholder: "กรอกวิชาที่สอน" },
-                        { label: "คอร์สที่เปิดสอน", placeholder: "กรอกคอร์สที่เปิดสอน" },
-                        { label: "ประวัติการศึกษา", placeholder: "กรอกประวัติการศึกษา" },
-                        { label: "ความพร้อมของตารางเวลา", placeholder: "กรอกความพร้อมของตารางเวลา" },
-                        { label: "ราคา คอร์สที่เปิดสอน", placeholder: "กรอกราคา คอร์สที่เปิดสอน" },
-                    ].map((field, index) => (
-                        <div key={index}>
-                            <label className="text-gray-700 font-semibold">{field.label}</label>
-                            <input
-                                type="text"
-                                placeholder={field.placeholder}
-                                className="w-full py-3 h-14 rounded-lg px-4 border border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-400 outline-none bg-white"
-                            />
-                        </div>
-                    ))}
-                </div>
+  const handleBack = () => router.back();
 
-                {/* อัปโหลดเอกสาร */}
-                <h2 className="text-xl font-semibold my-6 text-gray-700">📄 อัปโหลดเอกสารที่เกี่ยวข้อง</h2>
+  if (loading) {
+    return <p className="text-center mt-10">กำลังโหลดข้อมูล...</p>;
+  }
 
-                {[ 
-                    { label: "บัตรประชาชน", state: documentIdCard, setState: setDocumentIdCard },
-                    { label: "เอกสารรับรองอื่น ๆ", state: documentCertificate, setState: setDocumentCertificate },
-                ].map((doc, index) => (
-                    <div key={index} className="mb-4">
-                        <label className="text-gray-700 font-semibold">{doc.label}</label>
-                        <div className="relative w-full h-40 bg-white border border-gray-300 rounded-xl flex items-center justify-center shadow-md hover:bg-gray-100 transition">
-                            {doc.state ? (
-                                <img
-                                    src={doc.state}
-                                    alt={doc.label}
-                                    className="w-full h-full object-contain rounded-md"
-                                />
-                            ) : (
-                                <span className="text-gray-500 flex items-center">
-                                    <FaUpload className="mr-2 text-gray-400" /> อัปโหลดไฟล์
-                                </span>
-                            )}
-                            <input
-                                type="file"
-                                accept="image/*,application/pdf"
-                                className="absolute inset-0 opacity-0 cursor-pointer"
-                                onChange={(e) => handleImageChange(e, doc.setState)}
-                            />
-                        </div>
-                    </div>
-                ))}
+  return (
+    <div className="min-h-screen bg-blue-50 py-8 px-4">
+      <div className="max-w-2xl mx-auto bg-white shadow-lg rounded-xl p-6">
+        <button
+          onClick={handleBack}
+          className="mb-4 text-blue-600 hover:text-blue-800"
+        >
+          <FaArrowLeft /> ย้อนกลับ
+        </button>
+        <h2 className="text-2xl font-bold mb-6 text-gray-700">แก้ไขโปรไฟล์ติวเตอร์</h2>
 
-                {/* ปุ่มบันทึกข้อมูล */}
-                <button
-                    onClick={handleSave}
-                    className="mt-6 w-full bg-gradient-to-r from-blue-500 to-blue-700 hover:opacity-90 text-white py-3 rounded-lg shadow-lg text-lg transition"
-                >
-                    บันทึกข้อมูล
-                </button>
-            </div>
-
+        {/* ฟอร์มกรอก */}
+        <div className="space-y-4">
+          <Input label="วุฒิการศึกษา" value={tutorData.education_level} onChange={(val) => handleChange("education_level", val)} />
+          <Input label="ประสบการณ์ (ปี)" value={tutorData.experience_years} onChange={(val) => handleChange("experience_years", val)} />
+          <Input label="ตารางสอน" value={tutorData.available_time} onChange={(val) => handleChange("available_time", val)} />
+          <Input label="อัตราค่าบริการ (บาท/ชม.)" value={tutorData.rate_per_hour} onChange={(val) => handleChange("rate_per_hour", val)} />
+          <Textarea label="รายละเอียดวิชาที่สอน" value={tutorData.subject_details} onChange={(val) => handleChange("subject_details", val)} />
         </div>
-    );
+
+        <button
+          onClick={handleSave}
+          className="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg text-lg font-semibold"
+        >
+          💾 บันทึกข้อมูล
+        </button>
+      </div>
+    </div>
+  );
 };
+
+const Input = ({ label, value, onChange }) => (
+  <div>
+    <label className="block text-sm font-medium text-gray-600 mb-1">{label}</label>
+    <input
+      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-200"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  </div>
+);
+
+const Textarea = ({ label, value, onChange }) => (
+  <div>
+    <label className="block text-sm font-medium text-gray-600 mb-1">{label}</label>
+    <textarea
+      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-200"
+      rows={4}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  </div>
+);
 
 export default EditTutorProfilePage;

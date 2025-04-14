@@ -1,28 +1,28 @@
 import prisma from "@/prisma/client";
 
-export async function POST(req, { params }) {
-  const { id } = params;
-  const body = await req.json();
+export async function GET(req, { params }) {
+  const tutorId = parseInt(params.id);
 
   try {
-    const newCourse = await prisma.tutor_courses.create({
-      data: {
-        user_id: parseInt(id),
-        subject_id: parseInt(body.subject_id),
-        level: body.level,
-        description: body.description,
-      },
+    const courses = await prisma.tutor_courses.findMany({
+      where: { tutor_id: tutorId },
+      include: { subject: true },
     });
 
-    return new Response(JSON.stringify(newCourse), {
-      status: 201,
+    const formatted = courses.map(course => ({
+      course_id: course.course_id,
+      level: course.level,
+      description: course.description,
+      subject_name: course.subject.name,
+    }));
+
+    return new Response(JSON.stringify(formatted), {
       headers: { "Content-Type": "application/json" },
     });
-  } catch (error) {
-    console.error("🔥 ERROR:", error);
-    return new Response(JSON.stringify({ error: "ไม่สามารถเพิ่มคอร์สได้" }), {
+  } catch (err) {
+    console.error("📛 ERROR:", err);
+    return new Response(JSON.stringify({ error: "เกิดข้อผิดพลาด" }), {
       status: 500,
-      headers: { "Content-Type": "application/json" },
     });
   }
 }

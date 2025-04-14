@@ -1,47 +1,26 @@
 import prisma from "@/prisma/client";
 
-export async function PUT(req, { params }) {
+export async function POST(req, { params }) {
   const { id } = params;
-  let body;
+  const body = await req.json();
 
   try {
-    body = await req.json();
-  } catch (err) {
-    return new Response(JSON.stringify({ error: "ไม่พบข้อมูลที่ส่งมา" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
-  try {
-    const updatedTutor = await prisma.tutor.update({
-      where: { user_id: parseInt(id) },
+    const newCourse = await prisma.tutor_courses.create({
       data: {
-        experience_years: body.experience_years ?? undefined,
-        available_time: body.available_time ?? undefined,
-        rate_per_hour: body.rate_per_hour ?? undefined,
-        subject_details: body.subject_details ?? undefined,
+        user_id: parseInt(id),
+        subject_id: parseInt(body.subject_id),
+        level: body.level,
+        description: body.description,
       },
     });
 
-    const updatedUser = await prisma.user.update({
-      where: { user_id: parseInt(id) },
-      data: {
-        education_level: body.education_level ?? undefined,
-      },
-    });
-
-    return new Response(JSON.stringify({
-      message: "อัปเดตข้อมูลสำเร็จ",
-      updatedTutor,
-      updatedUser,
-    }), {
-      status: 200,
+    return new Response(JSON.stringify(newCourse), {
+      status: 201,
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
     console.error("🔥 ERROR:", error);
-    return new Response(JSON.stringify({ error: "เกิดข้อผิดพลาดในการอัปเดต" }), {
+    return new Response(JSON.stringify({ error: "ไม่สามารถเพิ่มคอร์สได้" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });

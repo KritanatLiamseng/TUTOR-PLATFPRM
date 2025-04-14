@@ -8,7 +8,6 @@ generator client {
 }
 
 model Tutor {
-  @@map("tutors") // 🟢 สำคัญที่สุด
 
   tutor_id               Int     @id @default(autoincrement())
   user_id                Int     @unique
@@ -21,12 +20,13 @@ model Tutor {
   education_background   String?
   rating_average         Float?
 
-  user User @relation(fields: [user_id], references: [user_id])
+  user          User            @relation(fields: [user_id], references: [user_id])
+  tutor_courses tutor_courses[] // ✅ ความสัมพันธ์ย้อนกลับ
+
+  @@map("tutors")
 }
 
-
 model User {
-  @@map("users")
 
   user_id         Int      @id @default(autoincrement())
   name            String
@@ -42,4 +42,25 @@ model User {
   created_at      DateTime @default(now())
 
   tutor Tutor?
+
+  @@map("users")
+}
+
+model subjects {
+  subject_id  Int     @id @default(autoincrement())
+  name        String
+  description String?
+
+  tutor_courses tutor_courses[]
+}
+
+model tutor_courses {
+  course_id   Int     @id @default(autoincrement())
+  tutor_id    Int
+  subject_id  Int
+  level       String
+  description String?
+
+  tutor   Tutor    @relation(fields: [tutor_id], references: [tutor_id])
+  subject subjects @relation(fields: [subject_id], references: [subject_id])
 }

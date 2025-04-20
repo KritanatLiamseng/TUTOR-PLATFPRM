@@ -2,13 +2,18 @@ import prisma from "@/prisma/client";
 import { NextResponse } from "next/server";
 
 export async function GET(req, context) {
-  const { id } = context.params;
+  const id = context.params?.id;
+
+  // ตรวจสอบว่า id เป็นตัวเลขที่ถูกต้อง
+  if (!id || isNaN(id)) {
+    return NextResponse.json({ error: "ID ไม่ถูกต้อง" }, { status: 400 });
+  }
 
   try {
     const tutor = await prisma.user.findUnique({
       where: { user_id: parseInt(id, 10) },
       include: {
-        tutor: true, // include ข้อมูลจากตาราง tutor
+        tutor: true, // ดึงข้อมูลจากตาราง tutor ด้วย
       },
     });
 

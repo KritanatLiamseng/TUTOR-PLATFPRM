@@ -55,12 +55,17 @@ model subjects {
 }
 
 model tutor_courses {
-  course_id   Int     @id @default(autoincrement())
-  tutor_id    Int
-  subject_id  Int
-  level       String
-  description String?
+  course_id          Int      @id @default(autoincrement())
+  tutor_id           Int
+  subject_id         Int
+  course_title       String             // ✅ ต้องมีบรรทัดนี้
+  course_description String?
+  rate_per_hour      Float?
+  teaching_method    String?
+  level              String?
 
   tutor   Tutor    @relation(fields: [tutor_id], references: [tutor_id])
   subject subjects @relation(fields: [subject_id], references: [subject_id])
 }
+
+

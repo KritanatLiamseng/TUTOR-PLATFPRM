@@ -1,3 +1,4 @@
+
 "use client";
 
 import Header from "../components/header";
@@ -81,8 +82,6 @@ const HomeTutorPage = () => {
     <div className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-white font-sans">
       <Header dropdownItems={menuItems} />
       <div className="max-w-5xl mx-auto space-y-8 py-10 px-4">
-
-        {/* ติวเตอร์โปรไฟล์ */}
         <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col md:flex-row items-center gap-6">
           <div className="w-28 h-28 bg-blue-300 rounded-full flex items-center justify-center">
             <img src={user.profile_image || "/default-profile.png"} alt="avatar" className="w-full h-full object-cover" />
@@ -100,7 +99,6 @@ const HomeTutorPage = () => {
           </div>
         </div>
 
-        {/* คอร์ส */}
         <div className="bg-white rounded-2xl shadow-lg p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold text-gray-800">📚 คอร์สที่เปิดสอน</h2>
@@ -116,8 +114,9 @@ const HomeTutorPage = () => {
               {courses.map((course) => (
                 <li key={course.course_id} className="bg-gray-50 px-4 py-3 rounded-lg shadow-sm flex justify-between items-start">
                   <div>
-                    <strong>{course.subject_name}</strong> ({course.level})<br />
-                    <span className="text-sm text-gray-600">{course.description}</span>
+                    <strong>{course.course_title}</strong><br />
+                    <span className="text-sm text-gray-600">{course.course_description}</span><br />
+                    <span className="text-sm text-gray-500">วิชา: {course.subject_name}, ระดับ: {course.level}, ค่าบริการ: {course.rate_per_hour ?? "-"}฿, วิธีสอน: {course.teaching_method}</span>
                   </div>
                   <div className="flex gap-3">
                     <button

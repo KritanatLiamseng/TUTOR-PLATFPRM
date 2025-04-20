@@ -1,28 +1,49 @@
 import prisma from "@/prisma/client";
 
-export async function GET(req, { params }) {
-  const tutorId = parseInt(params.id);
+export async function POST(req, context) {
+  const id = context.params?.id;
+  const tutor_id = parseInt(id, 10);
+  const body = await req.json();
 
   try {
-    const courses = await prisma.tutor_courses.findMany({
-      where: { tutor_id: tutorId },
-      include: { subject: true },
+    const {
+      subject_id,
+      course_title,
+      course_description,
+      rate_per_hour,
+      teaching_method,
+      level,
+    } = body;
+
+    // validation
+    if (!subject_id || !course_title || !rate_per_hour || !teaching_method || !level) {
+      return new Response(JSON.stringify({ error: "ข้อมูลไม่ครบถ้วน" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const newCourse = await prisma.tutor_courses.create({
+      data: {
+        tutor_id,
+        subject_id: parseInt(subject_id),
+        course_title,
+        course_description,
+        rate_per_hour: parseFloat(rate_per_hour),
+        teaching_method,
+        level,
+      },
     });
 
-    const formatted = courses.map(course => ({
-      course_id: course.course_id,
-      level: course.level,
-      description: course.description,
-      subject_name: course.subject.name,
-    }));
-
-    return new Response(JSON.stringify(formatted), {
+    return new Response(JSON.stringify(newCourse), {
+      status: 201,
       headers: { "Content-Type": "application/json" },
     });
-  } catch (err) {
-    console.error("📛 ERROR:", err);
-    return new Response(JSON.stringify({ error: "เกิดข้อผิดพลาด" }), {
+  } catch (error) {
+    console.error("❌ เพิ่มคอร์สล้มเหลว:", error);
+    return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
+      headers: { "Content-Type": "application/json" },
     });
   }
 }

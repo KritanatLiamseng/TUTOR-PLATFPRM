@@ -1,11 +1,18 @@
 import prisma from "@/prisma/client";
 
 export async function GET(req, { params }) {
-  const { id } = params;
+  const id = params?.id;
+
+  if (!id || isNaN(id)) {
+    return new Response(JSON.stringify({ error: "ID ไม่ถูกต้อง" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 
   try {
     const user = await prisma.user.findUnique({
-      where: { user_id: parseInt(id) },
+      where: { user_id: parseInt(id, 10) },
     });
 
     if (!user) {
@@ -27,3 +34,5 @@ export async function GET(req, { params }) {
     });
   }
 }
+
+

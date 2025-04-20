@@ -1,5 +1,22 @@
 import prisma from "@/prisma/client";
 
+export async function DELETE(req, { params }) {
+  const course_id = parseInt(params.course_id);
+
+  try {
+    await prisma.tutor_courses.delete({ where: { course_id } });
+    return new Response(JSON.stringify({ message: "ลบคอร์สเรียบร้อย" }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (err) {
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+}
+
 export async function PUT(req, { params }) {
   const course_id = parseInt(params.course_id);
   const data = await req.json();
@@ -22,7 +39,6 @@ export async function PUT(req, { params }) {
       headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
-    console.error("❌ อัปเดตคอร์สล้มเหลว:", err.message);
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
       headers: { "Content-Type": "application/json" },

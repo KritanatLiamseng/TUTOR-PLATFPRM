@@ -1,7 +1,7 @@
 import prisma from "@/prisma/client";
 
 export async function POST(req, context) {
-  const id = context.params?.id;
+  const { id } = context.params; // ✅ ถูกต้องแล้วแบบนี้
   const tutor_id = parseInt(id, 10);
   const body = await req.json();
 
@@ -15,7 +15,6 @@ export async function POST(req, context) {
       level,
     } = body;
 
-    // validation
     if (!subject_id || !course_title || !rate_per_hour || !teaching_method || !level) {
       return new Response(JSON.stringify({ error: "ข้อมูลไม่ครบถ้วน" }), {
         status: 400,

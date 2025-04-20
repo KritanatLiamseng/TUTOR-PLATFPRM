@@ -1,11 +1,16 @@
+
 "use client";
+
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useParams } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 
 export default function EditCoursePage() {
+  const router = useRouter();
+  const params = useParams();
+  const courseId = params.course_id;
+
   const [subjects, setSubjects] = useState([]);
-  const [form, setForm] = useState({
+  const [formData, setFormData] = useState({
     subject_id: "",
     course_title: "",
     course_description: "",
@@ -13,20 +18,19 @@ export default function EditCoursePage() {
     teaching_method: "",
     level: "",
   });
-  const [loading, setLoading] = useState(false);
-  const { course_id } = useParams();
-  const router = useRouter();
+  const [loading, setLoading] = useState(true);
 
-  // โหลดข้อมูลวิชาและข้อมูลคอร์สเดิม
   useEffect(() => {
+    if (!courseId) return;
     fetch("/api/subjects")
       .then((res) => res.json())
-      .then(setSubjects);
+      .then(setSubjects)
+      .catch((err) => console.error("โหลดวิชา error", err));
 
-    fetch(`/api/tutor/courses/${course_id}`)
+    fetch(`/api/tutor/courses/${courseId}`)
       .then((res) => res.json())
       .then((data) => {
-        setForm({
+        setFormData({
           subject_id: data.subject_id,
           course_title: data.course_title,
           course_description: data.course_description,
@@ -34,29 +38,35 @@ export default function EditCoursePage() {
           teaching_method: data.teaching_method,
           level: data.level,
         });
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("โหลดคอร์ส error", err);
+        setLoading(false);
       });
-  }, [course_id]);
+  }, [courseId]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
-    const res = await fetch(`/api/tutor/courses/${course_id}`, {
+    const res = await fetch(`/api/tutor/courses/${courseId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify(formData),
     });
 
     if (res.ok) {
       router.push("/hometutor");
     } else {
-      const err = await res.json();
-      alert("❌ แก้ไขคอร์สล้มเหลว: " + err.error);
+      const error = await res.json();
+      alert("❌ อัปเดตล้มเหลว: " + error.error);
     }
 
     setLoading(false);
@@ -65,86 +75,92 @@ export default function EditCoursePage() {
   return (
     <div className="max-w-md mx-auto mt-10 bg-white shadow-lg rounded-xl p-6">
       <h2 className="text-xl font-bold text-center text-blue-700 mb-6">✏️ แก้ไขคอร์ส</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block mb-1 text-sm font-medium">ชื่อวิชา</label>
-          <select
-            name="subject_id"
-            value={form.subject_id}
-            onChange={handleChange}
-            className="w-full border px-3 py-2 rounded"
-          >
-            {subjects.map((subject) => (
-              <option key={subject.subject_id} value={subject.subject_id}>
-                {subject.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block mb-1 text-sm font-medium">ชื่อคอร์ส</label>
-          <input
-            type="text"
-            name="course_title"
-            value={form.course_title}
-            onChange={handleChange}
-            className="w-full border px-3 py-2 rounded"
-            required
-          />
-        </div>
-        <div>
-          <label className="block mb-1 text-sm font-medium">รายละเอียด</label>
-          <textarea
-            name="course_description"
-            value={form.course_description}
-            onChange={handleChange}
-            rows={3}
-            className="w-full border px-3 py-2 rounded"
-            required
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-4">
+      {loading ? (
+        <p className="text-center">กำลังโหลด...</p>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block mb-1 text-sm font-medium">ระดับชั้น</label>
+            <label className="block mb-1 text-sm font-medium text-gray-600">ชื่อวิชา</label>
+            <select
+              name="subject_id"
+              value={formData.subject_id}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded px-3 py-2"
+              required
+            >
+              <option value="">-- เลือกวิชา --</option>
+              {subjects.map((subject) => (
+                <option key={subject.subject_id} value={subject.subject_id}>
+                  {subject.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-600">ชื่อคอร์ส</label>
             <input
+              name="course_title"
               type="text"
-              name="level"
-              value={form.level}
+              value={formData.course_title}
               onChange={handleChange}
-              className="w-full border px-3 py-2 rounded"
+              className="w-full border border-gray-300 rounded px-3 py-2"
               required
             />
           </div>
           <div>
-            <label className="block mb-1 text-sm font-medium">ราคา/ชม</label>
-            <input
-              type="number"
-              name="rate_per_hour"
-              value={form.rate_per_hour}
+            <label className="block mb-1 text-sm font-medium text-gray-600">รายละเอียด</label>
+            <textarea
+              name="course_description"
+              value={formData.course_description}
               onChange={handleChange}
-              className="w-full border px-3 py-2 rounded"
+              rows={4}
+              className="w-full border border-gray-300 rounded px-3 py-2"
               required
             />
           </div>
-        </div>
-        <div>
-          <label className="block mb-1 text-sm font-medium">รูปแบบการสอน</label>
-          <input
-            type="text"
-            name="teaching_method"
-            value={form.teaching_method}
-            onChange={handleChange}
-            className="w-full border px-3 py-2 rounded"
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-blue-600 text-white py-2 rounded"
-        >
-          {loading ? "⏳ กำลังอัปเดต..." : "✅ บันทึกการแก้ไข"}
-        </button>
-      </form>
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-600">ค่าบริการ (บาท/ชม)</label>
+            <input
+              name="rate_per_hour"
+              type="number"
+              value={formData.rate_per_hour}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded px-3 py-2"
+              required
+              min="0"
+            />
+          </div>
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-600">วิธีการสอน</label>
+            <input
+              name="teaching_method"
+              type="text"
+              value={formData.teaching_method}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded px-3 py-2"
+              required
+            />
+          </div>
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-600">ระดับชั้น</label>
+            <input
+              name="level"
+              type="text"
+              value={formData.level}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded px-3 py-2"
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg"
+          >
+            💾 {loading ? "กำลังบันทึก..." : "บันทึกการแก้ไข"}
+          </button>
+        </form>
+      )}
     </div>
   );
 }

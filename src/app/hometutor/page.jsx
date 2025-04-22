@@ -1,4 +1,3 @@
-
 "use client";
 
 import Header from "../components/header";
@@ -33,10 +32,9 @@ const HomeTutorPage = () => {
         setUser(userData);
         return fetch(`/api/tutor/${userId}/courses`);
       })
-      .then((res) => res.text())
-      .then((text) => {
-        const courseData = text ? JSON.parse(text) : [];
-        setCourses(courseData);
+      .then((res) => res.json())
+      .then((courseData) => {
+        setCourses(courseData || []);
         setLoading(false);
       })
       .catch((err) => {
@@ -118,10 +116,8 @@ const HomeTutorPage = () => {
               {courses.map((course) => (
                 <li key={course.course_id} className="bg-gray-50 px-4 py-3 rounded-lg shadow-sm flex justify-between items-start">
                   <div>
-                    <strong>{course.course_title}</strong><br />
-                    <span className="text-gray-600 text-sm">{course.subject_name} ({course.level})</span><br />
-                    <span className="text-gray-600 text-sm">{course.teaching_method} / {course.rate_per_hour} บาท/ชม</span><br />
-                    <span className="text-gray-500 text-sm italic">{course.course_description}</span>
+                    <strong>{course.subject_name}</strong> ({course.level})<br />
+                    <span className="text-sm text-gray-600">{course.description}</span>
                   </div>
                   <div className="flex gap-3">
                     <button

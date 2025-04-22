@@ -1,46 +1,39 @@
 import prisma from "@/prisma/client";
 
-export async function POST(req, context) {
-  const { id } = context.params; // ✅ ถูกต้องแล้วแบบนี้
-  const tutor_id = parseInt(id, 10);
-  const body = await req.json();
+export async function GET(req, context) {
+  const params = await context.params; // 🟢 ต้อง await ก่อน
+  const id = params?.id;
 
-  try {
-    const {
-      subject_id,
-      course_title,
-      course_description,
-      rate_per_hour,
-      teaching_method,
-      level,
-    } = body;
-
-    if (!subject_id || !course_title || !rate_per_hour || !teaching_method || !level) {
-      return new Response(JSON.stringify({ error: "ข้อมูลไม่ครบถ้วน" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    const newCourse = await prisma.tutor_courses.create({
-      data: {
-        tutor_id,
-        subject_id: parseInt(subject_id),
-        course_title,
-        course_description,
-        rate_per_hour: parseFloat(rate_per_hour),
-        teaching_method,
-        level,
-      },
-    });
-
-    return new Response(JSON.stringify(newCourse), {
-      status: 201,
+  if (!id || isNaN(id)) {
+    return new Response(JSON.stringify({ error: "ID ไม่ถูกต้อง" }), {
+      status: 400,
       headers: { "Content-Type": "application/json" },
     });
-  } catch (error) {
-    console.error("❌ เพิ่มคอร์สล้มเหลว:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+  }
+
+  try {
+    const courses = await prisma.tutor_courses.findMany({
+      where: { tutor_id: parseInt(id, 10) },
+      include: { subject: true },
+    });
+
+    const formatted = courses.map((course) => ({
+      course_id: course.course_id,
+      course_title: course.course_title,
+      level: course.level,
+      rate_per_hour: course.rate_per_hour,
+      teaching_method: course.teaching_method,
+      course_description: course.course_description,
+      subject_name: course.subject?.name ?? "ไม่ระบุวิชา",
+    }));
+
+    return new Response(JSON.stringify(formatted), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (err) {
+    console.error("❌ ดึงคอร์สล้มเหลว:", err);
+    return new Response(JSON.stringify({ error: "เกิดข้อผิดพลาดในการโหลดคอร์ส" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });

@@ -1,8 +1,8 @@
 "use client";
 
-import Header from "../components/header";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Header from "../components/header";
 import {
   FaUser,
   FaHistory,
@@ -14,9 +14,12 @@ import {
   FaPlus,
   FaTrash,
   FaEdit,
+  FaPhone,
+  FaEnvelope,
+  FaIdCard,
 } from "react-icons/fa";
 
-const HomeTutorPage = () => {
+export default function HomeTutorPage() {
   const [user, setUser] = useState(null);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,14 +29,12 @@ const HomeTutorPage = () => {
     const userId = localStorage.getItem("userId");
     if (!userId) return setLoading(false);
 
-    fetch(`/api/user/${userId}`)
-      .then((res) => res.json())
-      .then((userData) => {
+    Promise.all([
+      fetch(`/api/user/${userId}`).then((res) => res.json()),
+      fetch(`/api/tutor/${userId}/courses`).then((res) => res.json()),
+    ])
+      .then(([userData, courseData]) => {
         setUser(userData);
-        return fetch(`/api/tutor/${userId}/courses`);
-      })
-      .then((res) => res.json())
-      .then((courseData) => {
         setCourses(courseData || []);
         setLoading(false);
       })
@@ -60,7 +61,6 @@ const HomeTutorPage = () => {
   };
 
   const menuItems = [
-    { label: "ข้อมูลของฉัน", path: "/tutorprofile", icon: <FaUser className="text-blue-500" /> },
     { label: "ประวัติการจอง", path: "/booking-history", icon: <FaHistory className="text-blue-500" /> },
     { label: "บัญชีของฉัน", path: "/account", icon: <FaWallet className="text-blue-500" /> },
     { label: "นโยบาย", path: "/policy", icon: <FaFileAlt className="text-blue-500" /> },
@@ -82,25 +82,43 @@ const HomeTutorPage = () => {
       <Header dropdownItems={menuItems} />
       <div className="max-w-5xl mx-auto space-y-8 py-10 px-4">
 
-        {/* ติวเตอร์โปรไฟล์ */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col md:flex-row items-center gap-6">
-          <div className="w-28 h-28 bg-blue-300 rounded-full flex items-center justify-center">
-            <img src={user.profile_image || "/default-profile.png"} alt="avatar" className="w-full h-full object-cover" />
+        {/* 📌 โปรไฟล์ติวเตอร์ */}
+        <div className="bg-white rounded-2xl shadow-lg p-6 relative flex flex-col md:flex-row items-center gap-6">
+          {/* ปุ่มแก้ไขด้านขวาบน */}
+          <button
+            onClick={() => router.push("/edittutor")}
+            className="absolute top-4 right-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow"
+          >
+            ✏️ แก้ไขโปรไฟล์
+          </button>
+
+          <div className="w-28 h-28 bg-blue-300 rounded-full flex items-center justify-center overflow-hidden">
+            <img
+              src={user.profile_image || "/default-profile.png"}
+              alt="avatar"
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.target.src = "/default-profile.png";
+              }}
+            />
           </div>
+
           <div className="text-center md:text-left">
             <h2 className="text-2xl font-bold text-gray-800">{user.name}</h2>
             <p className="text-gray-500">ติวเตอร์</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4 text-sm text-gray-700">
-              <div><strong>วุฒิการศึกษา:</strong> {user.education_level || "-"}</div>
+              <div><FaPhone className="inline mr-1" /> <strong>เบอร์โทร:</strong> {user.phone || "-"}</div>
+              <div><FaIdCard className="inline mr-1" /> <strong>ชื่อผู้ใช้:</strong> {user.username || "-"}</div>
+              <div><FaEnvelope className="inline mr-1" /> <strong>อีเมล:</strong> {user.email}</div>
+              <div><strong>ระดับการศึกษา:</strong> {user.education_level || "-"}</div>
               <div><strong>ประสบการณ์:</strong> {user.experience_years || 0} ปี</div>
               <div><strong>ตารางสอน:</strong> {user.available_time || "-"}</div>
-              <div><strong>ค่าบริการ:</strong> {user.rate_per_hour || 0} บาท/ชม</div>
-              <div><strong>รายละเอียดวิชา:</strong> {user.subject_details || "-"}</div>
+              
             </div>
           </div>
         </div>
 
-        {/* คอร์ส */}
+        {/* 📚 คอร์สที่เปิดสอน */}
         <div className="bg-white rounded-2xl shadow-lg p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold text-gray-800">📚 คอร์สที่เปิดสอน</h2>
@@ -116,8 +134,8 @@ const HomeTutorPage = () => {
               {courses.map((course) => (
                 <li key={course.course_id} className="bg-gray-50 px-4 py-3 rounded-lg shadow-sm flex justify-between items-start">
                   <div>
-                    <strong>{course.subject_name}</strong> ({course.level})<br />
-                    <span className="text-sm text-gray-600">{course.description}</span>
+                    <strong>{course.course_title}</strong> ({course.level})<br />
+                    <span className="text-sm text-gray-600">{course.course_description}</span>
                   </div>
                   <div className="flex gap-3">
                     <button
@@ -145,6 +163,4 @@ const HomeTutorPage = () => {
       </div>
     </div>
   );
-};
-
-export default HomeTutorPage;
+}

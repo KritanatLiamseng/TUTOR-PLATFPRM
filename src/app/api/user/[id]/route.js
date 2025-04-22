@@ -1,8 +1,8 @@
-
 import prisma from "@/prisma/client";
 
 export async function GET(req, context) {
-  const id = context.params?.id;
+  const params = await context.params;
+  const id = params?.id;
 
   if (!id || isNaN(id)) {
     return new Response(JSON.stringify({ error: "ID ไม่ถูกต้อง" }), {

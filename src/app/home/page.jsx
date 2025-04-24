@@ -1,7 +1,17 @@
 "use client";
 import { useEffect, useState } from "react";
 import Header from "../components/header";
-import { FaUserGraduate, FaStar, FaSearch, FaUser, FaHistory, FaFileAlt, FaQuestionCircle, FaInfoCircle, FaSignOutAlt } from "react-icons/fa";
+import {
+  FaUserGraduate,
+  FaStar,
+  FaSearch,
+  FaUser,
+  FaHistory,
+  FaFileAlt,
+  FaQuestionCircle,
+  FaInfoCircle,
+  FaSignOutAlt,
+} from "react-icons/fa";
 
 export default function HomePage() {
   const [tutors, setTutors] = useState([]);
@@ -20,7 +30,7 @@ export default function HomePage() {
   useEffect(() => {
     fetch("/api/tutors")
       .then((res) => res.json())
-      .then((data) => setTutors(data));
+      .then((data) => setTutors(Array.isArray(data) ? data : []));
   }, []);
 
   const subjects = [
@@ -33,7 +43,7 @@ export default function HomePage() {
     "ดนตรี",
     "ศิลปะ",
     "การเขียนโปรแกรม",
-    "เตรียมสอบเข้ามหาวิทยาลัย"
+    "เตรียมสอบเข้ามหาวิทยาลัย",
   ];
 
   return (
@@ -123,32 +133,36 @@ export default function HomePage() {
       <section className="px-6 py-10 max-w-6xl mx-auto">
         <h2 className="text-2xl font-bold text-center mb-6">ติวเตอร์แนะนำ</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {tutors.map((tutor, i) => (
-            <div key={i} className="bg-white shadow-lg rounded-xl p-6 hover:shadow-2xl transition">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-16 h-16 bg-blue-200 text-blue-700 flex items-center justify-center text-xl font-bold rounded-full">
-                  {tutor.name?.charAt(0).toUpperCase()}
+          {Array.isArray(tutors) && tutors.length > 0 ? (
+            tutors.map((tutor, i) => (
+              <div key={i} className="bg-white shadow-lg rounded-xl p-6 hover:shadow-2xl transition">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-16 h-16 bg-blue-200 text-blue-700 flex items-center justify-center text-xl font-bold rounded-full">
+                    {tutor.name?.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg">{tutor.name}</h3>
+                    <p className="text-sm text-gray-600">{tutor.subject || "ไม่ระบุวิชา"}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-bold text-lg">{tutor.name}</h3>
-                  <p className="text-sm text-gray-600">{tutor.subject || "ไม่ระบุวิชา"}</p>
+                <p className="text-gray-600 text-sm mb-2">
+                  ประสบการณ์ {tutor.experience_years || 0} ปี
+                </p>
+                <div className="flex items-center text-yellow-500 mb-2">
+                  <FaStar className="mr-1" />
+                  {(tutor.rating_average ?? 0).toFixed(1)} / 5.0
                 </div>
+                <div className="text-blue-600 font-semibold mb-2">
+                  {tutor.rate_per_hour || 500} บาท/ชั่วโมง
+                </div>
+                <button className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-full transition">
+                  จองติวเตอร์
+                </button>
               </div>
-              <p className="text-gray-600 text-sm mb-2">
-                ประสบการณ์ {tutor.experience_years || 0} ปี
-              </p>
-              <div className="flex items-center text-yellow-500 mb-2">
-                <FaStar className="mr-1" />
-                {tutor.rating_average?.toFixed(1) || "0.0"} / 5.0
-              </div>
-              <div className="text-blue-600 font-semibold mb-2">
-                {tutor.rate_per_hour || 500} บาท/ชั่วโมง
-              </div>
-              <button className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-full transition">
-                จองติวเตอร์
-              </button>
-            </div>
-          ))}
+            ))
+          ) : (
+            <p className="col-span-3 text-center text-gray-500 italic">ไม่มีข้อมูลติวเตอร์</p>
+          )}
         </div>
       </section>
 

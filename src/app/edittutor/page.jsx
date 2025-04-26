@@ -8,6 +8,8 @@ export default function EditTutorPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({
+    profile_image: null,        // File object
+    previewUrl: "",            // สำหรับ preview
     education_level: "",
     experience_years: "",
     available_time: "",
@@ -20,15 +22,17 @@ export default function EditTutorPage() {
     if (!userId) return;
 
     fetch(`/api/user/${userId}`)
-      .then(res => res.json())
-      .then(user => {
-        setForm({
+      .then((res) => res.json())
+      .then((user) => {
+        setForm((f) => ({
+          ...f,
+          previewUrl: user.profile_image || "/default-profile.png",
           education_level: user.education_level || "",
           experience_years: user.experience_years || "",
           available_time: user.available_time || "",
           rate_per_hour: user.rate_per_hour || "",
           bio: user.bio || "",
-        });
+        }));
         setLoading(false);
       })
       .catch((err) => {
@@ -37,25 +41,50 @@ export default function EditTutorPage() {
       });
   }, []);
 
-  const handleChange = (key, value) => {
-    setForm(prev => ({ ...prev, [key]: value }));
+  const handleChange = (e) => {
+    const { name, value, files } = e.target;
+    if (name === "profile_image" && files.length > 0) {
+      const file = files[0];
+      setForm((f) => ({
+        ...f,
+        profile_image: file,
+        previewUrl: URL.createObjectURL(file),
+      }));
+    } else {
+      setForm((f) => ({ ...f, [name]: value }));
+    }
   };
 
-  const handleSave = async () => {
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setLoading(true);
     const userId = localStorage.getItem("userId");
+
+    const payload = new FormData();
+    // ถ้ามีไฟล์ภาพใหม่ให้ append
+    if (form.profile_image) {
+      payload.append("profile_image", form.profile_image);
+    }
+    payload.append("education_level", form.education_level);
+    payload.append("experience_years", form.experience_years);
+    payload.append("available_time", form.available_time);
+    payload.append("rate_per_hour", form.rate_per_hour);
+    payload.append("bio", form.bio);
 
     const res = await fetch(`/api/tutor/${userId}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: payload,
     });
 
     if (res.ok) {
       alert("✅ บันทึกเรียบร้อยแล้ว");
       router.push("/hometutor");
     } else {
-      alert("❌ เกิดข้อผิดพลาดในการบันทึก");
+      const err = await res.json();
+      alert("❌ เกิดข้อผิดพลาด: " + err.error);
     }
+
+    setLoading(false);
   };
 
   if (loading) return <p className="text-center mt-10">กำลังโหลดข้อมูล...</p>;
@@ -65,48 +94,106 @@ export default function EditTutorPage() {
       <div className="max-w-2xl mx-auto bg-white p-6 shadow-lg rounded-xl">
         <button
           onClick={() => router.back()}
-          className="text-blue-600 hover:text-blue-800 mb-4"
+          className="text-blue-600 hover:text-blue-800 mb-4 flex items-center gap-2"
         >
-          <FaArrowLeft className="inline mr-1" /> ย้อนกลับ
+          <FaArrowLeft /> ย้อนกลับ
         </button>
 
         <h1 className="text-xl font-bold mb-6">📝 แก้ไขโปรไฟล์ติวเตอร์</h1>
 
-        <FormInput label="วุฒิการศึกษา" value={form.education_level} onChange={val => handleChange("education_level", val)} />
-        <FormInput label="ประสบการณ์ (ปี)" value={form.experience_years} onChange={val => handleChange("experience_years", val)} />
-        <FormInput label="ตารางสอน" value={form.available_time} onChange={val => handleChange("available_time", val)} />
-        
+        {/* 1) อัปโหลดรูป */}
+        <div className="mb-4">
+          <label className="block mb-1 text-sm font-medium text-gray-600">
+            รูปโปรไฟล์
+          </label>
+          <div className="flex items-center gap-4">
+            <img
+              src={form.previewUrl}
+              alt="preview"
+              className="w-20 h-20 rounded-full object-cover border"
+            />
+            <input
+              type="file"
+              name="profile_image"
+              accept="image/*"
+              onChange={handleChange}
+              className="text-sm"
+            />
+          </div>
+        </div>
+
+        {/* 2) ข้อมูลอื่น ๆ */}
+        <FormInput
+          label="วุฒิการศึกษา"
+          name="education_level"
+          value={form.education_level}
+          onChange={handleChange}
+        />
+        <FormInput
+          label="ประสบการณ์ (ปี)"
+          name="experience_years"
+          type="number"
+          value={form.experience_years}
+          onChange={handleChange}
+        />
+        <FormInput
+          label="ตารางสอน"
+          name="available_time"
+          value={form.available_time}
+          onChange={handleChange}
+        />
+        <FormInput
+          label="ค่าบริการ (บาท/ชม)"
+          name="rate_per_hour"
+          type="number"
+          value={form.rate_per_hour}
+          onChange={handleChange}
+        />
+        <FormTextarea
+          label="Bio"
+          name="bio"
+          value={form.bio}
+          onChange={handleChange}
+        />
 
         <button
           onClick={handleSave}
+          disabled={loading}
           className="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg"
         >
-          💾 บันทึกข้อมูล
+          {loading ? "⌛ กำลังบันทึก..." : "💾 บันทึกข้อมูล"}
         </button>
       </div>
     </div>
   );
 }
 
-const FormInput = ({ label, value, onChange }) => (
-  <div className="mb-4">
-    <label className="block mb-1 text-sm font-medium text-gray-600">{label}</label>
-    <input
-      className="w-full border border-gray-300 rounded px-3 py-2"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-    />
-  </div>
-);
+function FormInput({ label, name, type = "text", value, onChange }) {
+  return (
+    <div className="mb-4">
+      <label className="block mb-1 text-sm font-medium text-gray-600">{label}</label>
+      <input
+        name={name}
+        type={type}
+        className="w-full border border-gray-300 rounded px-3 py-2"
+        value={value}
+        onChange={onChange}
+      />
+    </div>
+  );
+}
 
-const FormTextarea = ({ label, value, onChange }) => (
-  <div className="mb-4">
-    <label className="block mb-1 text-sm font-medium text-gray-600">{label}</label>
-    <textarea
-      className="w-full border border-gray-300 rounded px-3 py-2"
-      rows={4}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-    />
-  </div>
-);
+function FormTextarea({ label, name, rows = 4, value, onChange }) {
+  return (
+    <div className="mb-4">
+      <label className="block mb-1 text-sm font-medium text-gray-600">{label}</label>
+      <textarea
+        name={name}
+        rows={rows}
+        className="w-full border border-gray-300 rounded px-3 py-2"
+        value={value}
+        onChange={onChange}
+      />
+    </div>
+  );
+}

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -37,7 +36,7 @@ export default function NewCoursePage() {
         course_title: courseTitle,
         course_description: courseDescription,
         rate_per_hour: ratePerHour,
-        teaching_method: teachingMethod,
+        teaching_method: teachingMethod,  // จะส่งเป็น "online" หรือ "offline"
         level,
       }),
     });
@@ -54,10 +53,15 @@ export default function NewCoursePage() {
 
   return (
     <div className="max-w-md mx-auto mt-10 bg-white shadow-lg rounded-xl p-6">
-      <h2 className="text-xl font-bold text-center text-blue-700 mb-6">➕ เพิ่มคอร์สใหม่</h2>
+      <h2 className="text-xl font-bold text-center text-blue-700 mb-6">
+        ➕ เพิ่มคอร์สใหม่
+      </h2>
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* 1) เลือกวิชา */}
         <div>
-          <label className="block mb-1 text-sm font-medium text-gray-600">ชื่อวิชา</label>
+          <label className="block mb-1 text-sm font-medium text-gray-600">
+            ชื่อวิชา
+          </label>
           <select
             value={subjectId}
             onChange={(e) => setSubjectId(e.target.value)}
@@ -72,63 +76,92 @@ export default function NewCoursePage() {
             ))}
           </select>
         </div>
+
+        {/* 2) ชื่อคอร์ส */}
         <div>
-          <label className="block mb-1 text-sm font-medium text-gray-600">ชื่อคอร์ส</label>
+          <label className="block mb-1 text-sm font-medium text-gray-600">
+            ชื่อคอร์ส
+          </label>
           <input
             type="text"
             value={courseTitle}
             onChange={(e) => setCourseTitle(e.target.value)}
             className="w-full border border-gray-300 rounded px-3 py-2"
+            placeholder="เช่น สอนคณิต ม.ต้น"
             required
           />
         </div>
+
+        {/* 3) รายละเอียด */}
         <div>
-          <label className="block mb-1 text-sm font-medium text-gray-600">รายละเอียด</label>
+          <label className="block mb-1 text-sm font-medium text-gray-600">
+            รายละเอียด
+          </label>
           <textarea
             value={courseDescription}
             onChange={(e) => setCourseDescription(e.target.value)}
             rows={4}
             className="w-full border border-gray-300 rounded px-3 py-2"
+            placeholder="เช่น เน้นสอนไตรโกณ..."
             required
           />
         </div>
+
+        {/* 4) ค่าบริการ */}
         <div>
-          <label className="block mb-1 text-sm font-medium text-gray-600">ค่าบริการ (บาท/ชม)</label>
+          <label className="block mb-1 text-sm font-medium text-gray-600">
+            ค่าบริการ (บาท/ชม)
+          </label>
           <input
             type="number"
             value={ratePerHour}
             onChange={(e) => setRatePerHour(e.target.value)}
             className="w-full border border-gray-300 rounded px-3 py-2"
-            required
             min="0"
+            placeholder="เช่น 300"
+            required
           />
         </div>
+
+        {/* 5) วิธีการสอน (แก้แล้ว) */}
         <div>
-          <label className="block mb-1 text-sm font-medium text-gray-600">วิธีการสอน</label>
-          <input
-            type="text"
+          <label className="block mb-1 text-sm font-medium text-gray-600">
+            วิธีการสอน
+          </label>
+          <select
             value={teachingMethod}
             onChange={(e) => setTeachingMethod(e.target.value)}
             className="w-full border border-gray-300 rounded px-3 py-2"
             required
-          />
+          >
+            <option value="">-- เลือกวิธีการสอน --</option>
+            <option value="online">ออนไลน์</option>
+            <option value="offline">ออฟไลน์</option>
+          </select>
         </div>
+
+        {/* 6) ระดับชั้น */}
         <div>
-          <label className="block mb-1 text-sm font-medium text-gray-600">ระดับชั้น</label>
+          <label className="block mb-1 text-sm font-medium text-gray-600">
+            ระดับชั้น
+          </label>
           <input
             type="text"
             value={level}
             onChange={(e) => setLevel(e.target.value)}
             className="w-full border border-gray-300 rounded px-3 py-2"
+            placeholder="เช่น ม.2, ปวช.1"
             required
           />
         </div>
+
+        {/* ปุ่มส่ง */}
         <button
           type="submit"
           disabled={loading}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg"
         >
-          ✅ {loading ? "กำลังบันทึก..." : "บันทึกคอร์ส"}
+          {loading ? "⌛ กำลังบันทึก..." : "✅ บันทึกคอร์ส"}
         </button>
       </form>
     </div>

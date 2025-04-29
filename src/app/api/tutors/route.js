@@ -1,32 +1,31 @@
+// src/app/api/tutors/route.js
 import prisma from "@/prisma/client";
 import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
     const tutors = await prisma.tutor.findMany({
-      where: { is_active: true },
+      where: { is_active: true },      // ← เปลี่ยนตรงนี้
       include: {
         user: {
           select: {
             name: true,
-            username: true,
-            email: true,
-            profile_image: true,
+            profile_image: true,       // ← ตาม @map("profile_image")
           },
         },
       },
       orderBy: {
-        tutor_id: "asc",
+        tutor_id: "asc",               // ← ใช้ tutor_id ไม่ใช่ tutorId
       },
     });
 
-    const formatted = tutors.map((tutor) => ({
-      name: tutor.user?.name ?? "-",
-      subject: tutor.bio ?? "ไม่ระบุวิชา",
-      experience_years: tutor.experience_years ?? 0,
-      rate_per_hour: tutor.rate_per_hour ?? 0,
-      rating_average: tutor.rating_average ?? 0,
-      profile_image: tutor.user?.profile_image ?? null,
+    const formatted = tutors.map((t) => ({
+      id:               t.tutor_id,
+      name:             t.user?.name ?? "-",
+      subject:          t.bio ?? "ไม่ระบุวิชา",
+      rate_per_hour:    t.rate_per_hour ?? 0,
+      rating_average:   t.rating_average ?? 0,
+      profile_image:    t.user?.profile_image ?? null,
     }));
 
     return NextResponse.json(formatted, { status: 200 });

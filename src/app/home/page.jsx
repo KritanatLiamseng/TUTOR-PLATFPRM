@@ -29,11 +29,11 @@ export default function HomePage() {
 
   // ดึงคอร์สของแต่ละติวเตอร์
   useEffect(() => {
-    tutors.forEach((tutor, idx) => {
-      const id = tutor.tutor_id ?? tutor.user_id;
+    tutors.forEach((tutor) => {
+      const id = tutor.id;           // ← ใช้ tutor.id
       if (!id) return;
       fetch(`/api/tutor/${id}/courses`)
-        .then((res) => res.ok ? res.json() : [])
+        .then((res) => (res.ok ? res.json() : []))
         .then((courses) => {
           setTutorCourses((prev) => ({ ...prev, [id]: courses }));
         });
@@ -46,13 +46,26 @@ export default function HomePage() {
     { label: "นโยบาย", path: "/policy" },
     { label: "ศูนย์ช่วยเหลือ", path: "/support" },
     { label: "รายงาน", path: "/report" },
-    { label: "ออกจากระบบ", onClick: () => { localStorage.removeItem("userId"); router.push("/login"); } },
+    {
+      label: "ออกจากระบบ",
+      onClick: () => {
+        localStorage.removeItem("userId");
+        router.push("/login");
+      },
+    },
   ];
 
   const subjects = [
-    "คณิตศาสตร์","วิทยาศาสตร์","ภาษาอังกฤษ","ภาษาไทย",
-    "สังคมศึกษา","ประวัติศาสตร์","ดนตรี","ศิลปะ",
-    "การเขียนโปรแกรม","เตรียมสอบเข้ามหาวิทยาลัย",
+    "คณิตศาสตร์",
+    "วิทยาศาสตร์",
+    "ภาษาอังกฤษ",
+    "ภาษาไทย",
+    "สังคมศึกษา",
+    "ประวัติศาสตร์",
+    "ดนตรี",
+    "ศิลปะ",
+    "การเขียนโปรแกรม",
+    "เตรียมสอบเข้ามหาวิทยาลัย",
   ];
 
   return (
@@ -61,8 +74,12 @@ export default function HomePage() {
 
       {/* Hero */}
       <section className="bg-blue-100 text-center py-12">
-        <h1 className="text-4xl font-bold text-blue-800 mb-2">เรียนกับติวเตอร์คุณภาพ</h1>
-        <p className="text-gray-700 text-lg">ค้นหา จอง และเรียนรู้ในที่เดียว</p>
+        <h1 className="text-4xl font-bold text-blue-800 mb-2">
+          เรียนกับติวเตอร์คุณภาพ
+        </h1>
+        <p className="text-gray-700 text-lg">
+          ค้นหา จอง และเรียนรู้ในที่เดียว
+        </p>
         <div className="mt-6 flex justify-center">
           <div className="relative w-full max-w-md">
             <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -77,64 +94,92 @@ export default function HomePage() {
 
       {/* Subject Categories */}
       <section className="px-6 py-6 max-w-6xl mx-auto">
-        <h2 className="text-xl font-bold text-blue-800 mb-4">📘 หมวดหมู่วิชาหลัก</h2>
+        <h2 className="text-xl font-bold text-blue-800 mb-4">
+          📘 หมวดหมู่วิชาหลัก
+        </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {subjects.map((subject) => (
+          {subjects.map((subj) => (
             <div
-              key={subject}
+              key={subj}
               className="bg-white border border-blue-200 text-blue-700 text-center p-4 rounded-lg hover:bg-blue-50 cursor-pointer"
-            >{subject}</div>
+            >
+              {subj}
+            </div>
           ))}
         </div>
       </section>
 
-      {/* Tutor Carousel */}
+      {/* Tutor Recommended Grid */}
       <section className="px-6 py-10 max-w-6xl mx-auto">
-        <h2 className="text-2xl font-bold text-center mb-6">ติวเตอร์แนะนำ</h2>
-        <div className="overflow-x-auto">
-          <div className="flex gap-6 pb-4">
-            {tutors.map((tutor, idx) => {
-              const id = tutor.tutor_id ?? tutor.user_id ?? idx;
-              const displayName = tutor.name ?? tutor.username ?? "ติวเตอร์";
-              const initial = displayName.charAt(0).toUpperCase();
-              const courses = tutorCourses[id] ?? [];
-              return (
-                <div key={id} className="min-w-[280px] bg-white shadow-lg rounded-xl p-4 flex-shrink-0">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-12 h-12 rounded-full bg-blue-200 flex items-center justify-center text-lg font-bold">
-                      {initial}
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-800">{displayName}</h3>
-                      <p className="text-sm text-gray-500">{tutor.subject_name ?? "ไม่ระบุวิชา"}</p>
-                    </div>
+        <h2 className="text-2xl font-bold text-center mb-8">ติวเตอร์แนะนำ</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+          {tutors.map((tutor) => {
+            const { id, name, subject, rating_average, rate_per_hour } = tutor;
+            const courses = tutorCourses[id] || [];
+
+            return (
+              <div
+                key={id}                     // ← ใช้ id ที่แน่นอน
+                className="bg-white rounded-2xl shadow hover:shadow-lg transition p-6 flex flex-col"
+              >
+                {/* Avatar + Info */}
+                <div className="flex items-center space-x-4 mb-4">
+                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-xl font-semibold text-blue-600">
+                    {name.charAt(0)}
                   </div>
-                  <div className="mb-2 space-y-1">
-                    {courses.slice(0,2).map(c => (
-                      <p key={c.course_id} className="text-sm text-gray-600 truncate">• {c.course_title}</p>
-                    ))}
-                    {courses.length > 2 && (
-                      <p
-                        key="more"
-                        className="text-xs text-blue-500 cursor-pointer"
-                        onClick={() => router.push(`/tutor/courses/${id}`)}
-                      >ดูทั้งหมด ({courses.length})</p>
-                    )}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800">
+                      {name}
+                    </h3>
+                    <p className="text-sm text-gray-500">{subject}</p>
                   </div>
-                  <div className="flex items-center justify-between text-sm text-gray-700 mb-3">
-                    <span className="flex items-center gap-1">
-                      <FaStar className="text-yellow-400" /> {(tutor.rating_average ?? 0).toFixed(1)}
-                    </span>
-                    <span className="font-semibold">{tutor.rate_per_hour ?? 500} ฿/ชม</span>
-                  </div>
+                </div>
+
+                {/* Rating & Price */}
+                <div className="flex items-center justify-between mb-4 text-gray-700">
+                  <span className="flex items-center space-x-1">
+                    <FaStar className="text-yellow-400" />
+                    <span className="text-sm">{rating_average.toFixed(1)}</span>
+                  </span>
+                  <span className="text-sm font-medium">{rate_per_hour} ฿/ชม</span>
+                </div>
+
+                {/* Quick Course List */}
+                <div className="flex-1 mb-4 text-gray-600 text-sm space-y-1">
+                  {courses.slice(0, 3).map((c) => (
+                    <p key={c.course_id} className="truncate">
+                      • {c.course_title}
+                    </p>
+                  ))}
+                  {courses.length > 3 && (
+                    <p
+                      key={`more-${id}`}
+                      className="text-xs text-blue-600 cursor-pointer hover:underline"
+                      onClick={() => router.push(`/tutor/courses/${id}`)}
+                    >
+                      ดูทั้งหมด ({courses.length})
+                    </p>
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="mt-auto space-y-2">
                   <button
                     onClick={() => router.push(`/tutor/courses/${id}`)}
-                    className="w-full bg-blue-600 text-white py-2 rounded-lg text-sm hover:bg-blue-700"
-                  >ดูโปรไฟล์ติวเตอร์</button>
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-sm transition"
+                  >
+                    ดูโปรไฟล์ติวเตอร์
+                  </button>
+                  <button
+                    onClick={() => router.push(`/tutor/courses/${id}`)}
+                    className="w-full border border-blue-600 text-blue-600 py-2 rounded-lg text-sm hover:bg-blue-50 transition"
+                  >
+                    จองทันที
+                  </button>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })}
         </div>
       </section>
 

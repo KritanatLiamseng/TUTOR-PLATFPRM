@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import Header from "../components/header";
 import { FaSearch, FaStar } from "react-icons/fa";
@@ -24,25 +25,28 @@ export default function HomePage() {
   useEffect(() => {
     fetch("/api/tutors")
       .then((res) => res.json())
-      .then((data) => setTutors(Array.isArray(data) ? data : []));
+      .then((data) => {
+        setTutors(Array.isArray(data) ? data : []);
+      });
   }, []);
 
   // ดึงคอร์สของแต่ละติวเตอร์
   useEffect(() => {
     tutors.forEach((tutor) => {
-      const id = tutor.id;           // ← ใช้ tutor.id
-      if (!id) return;
-      fetch(`/api/tutor/${id}/courses`)
+      const tutorUserId = tutor.user_id;
+      if (!tutorUserId) return;
+
+      fetch(`/api/tutor/${tutorUserId}/courses`)
         .then((res) => (res.ok ? res.json() : []))
         .then((courses) => {
-          setTutorCourses((prev) => ({ ...prev, [id]: courses }));
+          setTutorCourses((prev) => ({ ...prev, [tutorUserId]: courses }));
         });
     });
   }, [tutors]);
 
   const menuItems = [
     { label: "ประวัติการจอง", path: "/booking-history" },
-    { label: "บัญชีของฉัน", path: "/account" },
+    { label: "บัญชีของฉัน", path: "/studentprofile" },
     { label: "นโยบาย", path: "/policy" },
     { label: "ศูนย์ช่วยเหลือ", path: "/support" },
     { label: "รายงาน", path: "/report" },
@@ -56,20 +60,13 @@ export default function HomePage() {
   ];
 
   const subjects = [
-    "คณิตศาสตร์",
-    "วิทยาศาสตร์",
-    "ภาษาอังกฤษ",
-    "ภาษาไทย",
-    "สังคมศึกษา",
-    "ประวัติศาสตร์",
-    "ดนตรี",
-    "ศิลปะ",
-    "การเขียนโปรแกรม",
-    "เตรียมสอบเข้ามหาวิทยาลัย",
+    "คณิตศาสตร์", "วิทยาศาสตร์", "ภาษาอังกฤษ", "ภาษาไทย",
+    "สังคมศึกษา", "ประวัติศาสตร์", "ดนตรี", "ศิลปะ",
+    "การเขียนโปรแกรม", "เตรียมสอบเข้ามหาวิทยาลัย",
   ];
 
   return (
-    <div className="min-h-screen bg-white font-sans relative">
+    <div className="min-h-screen bg-white font-sans">
       <Header dropdownItems={menuItems} user={user} />
 
       {/* Hero */}
@@ -114,12 +111,12 @@ export default function HomePage() {
         <h2 className="text-2xl font-bold text-center mb-8">ติวเตอร์แนะนำ</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
           {tutors.map((tutor) => {
-            const { id, name, subject, rating_average, rate_per_hour } = tutor;
-            const courses = tutorCourses[id] || [];
+            const { user_id, name, subject, rating_average, rate_per_hour } = tutor;
+            const courses = tutorCourses[user_id] || [];
 
             return (
               <div
-                key={id}                     // ← ใช้ id ที่แน่นอน
+                key={user_id}
                 className="bg-white rounded-2xl shadow hover:shadow-lg transition p-6 flex flex-col"
               >
                 {/* Avatar + Info */}
@@ -128,9 +125,7 @@ export default function HomePage() {
                     {name.charAt(0)}
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-800">
-                      {name}
-                    </h3>
+                    <h3 className="text-lg font-semibold text-gray-800">{name}</h3>
                     <p className="text-sm text-gray-500">{subject}</p>
                   </div>
                 </div>
@@ -153,9 +148,9 @@ export default function HomePage() {
                   ))}
                   {courses.length > 3 && (
                     <p
-                      key={`more-${id}`}
+                      key={`more-${user_id}`}
                       className="text-xs text-blue-600 cursor-pointer hover:underline"
-                      onClick={() => router.push(`/tutor/courses/${id}`)}
+                      onClick={() => router.push(`/tutor/courses/${user_id}`)}
                     >
                       ดูทั้งหมด ({courses.length})
                     </p>
@@ -165,13 +160,13 @@ export default function HomePage() {
                 {/* Action Buttons */}
                 <div className="mt-auto space-y-2">
                   <button
-                    onClick={() => router.push(`/tutor/courses/${id}`)}
+                    onClick={() => router.push(`/tutor/courses/${user_id}`)}
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-sm transition"
                   >
                     ดูโปรไฟล์ติวเตอร์
                   </button>
                   <button
-                    onClick={() => router.push(`/tutor/courses/${id}`)}
+                    onClick={() => router.push(`/tutor/courses/${user_id}`)}
                     className="w-full border border-blue-600 text-blue-600 py-2 rounded-lg text-sm hover:bg-blue-50 transition"
                   >
                     จองทันที

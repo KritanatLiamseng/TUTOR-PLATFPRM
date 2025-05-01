@@ -1,37 +1,67 @@
+/* src/app/api/user/[id]/route.js */
+
 import prisma from "@/prisma/client";
+import { NextResponse } from "next/server";
 
-export async function GET(req, context) {
+// GET /api/user/[id]
+export async function GET(request, context) {
   const params = await context.params;
-  const id = params?.id;
+  const userId = parseInt(params.id, 10);
+  if (isNaN(userId)) {
+    return NextResponse.json({ error: "ID ไม่ถูกต้อง" }, { status: 400 });
+  }
+  try {
+    const user = await prisma.user.findUnique({ where: { user_id: userId } });
+    if (!user) {
+      return NextResponse.json({ error: "ไม่พบผู้ใช้" }, { status: 404 });
+    }
+    return NextResponse.json(user);
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: "เกิดข้อผิดพลาด" }, { status: 500 });
+  }
+}
 
-  if (!id || isNaN(id)) {
-    return new Response(JSON.stringify({ error: "ID ไม่ถูกต้อง" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
+// PUT /api/user/[id]
+export async function PUT(request, context) {
+  const params = await context.params;
+  const userId = parseInt(params.id, 10);
+  if (isNaN(userId)) {
+    return NextResponse.json({ error: "ID ไม่ถูกต้อง" }, { status: 400 });
   }
 
+  let body;
   try {
-    const user = await prisma.user.findUnique({
-      where: { user_id: parseInt(id, 10) },
-    });
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "ข้อมูล JSON ไม่ถูกต้อง" }, { status: 400 });
+  }
 
-    if (!user) {
-      return new Response(JSON.stringify({ error: "ไม่พบผู้ใช้" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
+  const {
+    profile_image,
+    name,
+    phone,
+    email,
+    username,
+    password,
+  } = body;
 
-    return new Response(JSON.stringify(user), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
+  try {
+    const updateData = {};
+    if (profile_image !== undefined) updateData.profile_image = profile_image;
+    if (name !== undefined) updateData.name = name;
+    if (phone !== undefined) updateData.phone = phone;
+    if (email !== undefined) updateData.email = email;
+    if (username !== undefined) updateData.username = username;
+    if (password) updateData.password = password; // hash ก่อนใช้จริง
+
+    const updatedUser = await prisma.user.update({
+      where: { user_id: userId },
+      data: updateData,
     });
+    return NextResponse.json(updatedUser);
   } catch (err) {
-    console.error("🔥 Error:", err);
-    return new Response(JSON.stringify({ error: "เกิดข้อผิดพลาด" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    console.error(err);
+    return NextResponse.json({ error: "อัปเดตไม่สำเร็จ" }, { status: 500 });
   }
 }

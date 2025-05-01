@@ -69,3 +69,4 @@ ALTER TABLE "tutor_courses" ADD CONSTRAINT "tutor_courses_tutor_id_fkey" FOREIGN
 
 -- AddForeignKey
 ALTER TABLE "tutor_courses" ADD CONSTRAINT "tutor_courses_subject_id_fkey" FOREIGN KEY ("subject_id") REFERENCES "subjects"("subject_id") ON DELETE RESTRICT ON UPDATE CASCADE;
+

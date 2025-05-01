@@ -8,7 +8,6 @@ generator client {
 }
 
 model Tutor {
-
   tutor_id               Int     @id @default(autoincrement())
   user_id                Int     @unique
   bio                    String?
@@ -20,14 +19,15 @@ model Tutor {
   education_background   String?
   rating_average         Float?
 
-  user          User            @relation(fields: [user_id], references: [user_id])
-  tutor_courses tutor_courses[] // ✅ ความสัมพันธ์ย้อนกลับ
+  user          User          @relation(fields: [user_id], references: [user_id])
+  tutor_courses TutorCourse[]
+
+  bookings Booking[] // แมป relation ไปยัง Booking.tutor
 
   @@map("tutors")
 }
 
 model User {
-
   user_id         Int      @id @default(autoincrement())
   name            String
   surname         String
@@ -43,29 +43,50 @@ model User {
 
   tutor Tutor?
 
+  bookings Booking[] // แมป relation ไปยัง Booking.student
+
   @@map("users")
 }
 
-model subjects {
+model Subject {
   subject_id  Int     @id @default(autoincrement())
   name        String
   description String?
 
-  tutor_courses tutor_courses[]
+  tutorCourses TutorCourse[]
+
+  @@map("subjects")
 }
 
-model tutor_courses {
-  course_id          Int      @id @default(autoincrement())
+model TutorCourse {
+  course_id          Int     @id @default(autoincrement())
   tutor_id           Int
   subject_id         Int
-  course_title       String             // ✅ ต้องมีบรรทัดนี้
+  course_title       String
   course_description String?
   rate_per_hour      Float?
   teaching_method    String?
   level              String?
 
-  tutor   Tutor    @relation(fields: [tutor_id], references: [tutor_id])
-  subject subjects @relation(fields: [subject_id], references: [subject_id])
+  tutor    Tutor     @relation(fields: [tutor_id], references: [tutor_id])
+  subject  Subject   @relation(fields: [subject_id], references: [subject_id])
+  bookings Booking[]
+
+  @@map("tutor_courses")
 }
 
+model Booking {
+  booking_id   Int      @id @default(autoincrement())
+  student_id   Int
+  course_id    Int
+  booking_date DateTime
+  status       String
+  tutor_id     Int
+  total_amount Float
 
+  student User        @relation(fields: [student_id], references: [user_id])
+  tutor   Tutor       @relation(fields: [tutor_id], references: [tutor_id])
+  course  TutorCourse @relation(fields: [course_id], references: [course_id], onDelete: Cascade)
+
+  @@map("bookings")
+}

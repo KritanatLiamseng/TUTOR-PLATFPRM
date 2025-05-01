@@ -1,39 +1,55 @@
+// src/app/api/tutor/[id]/route.js
 import prisma from "@/prisma/client";
 import { NextResponse } from "next/server";
 
-export async function GET(req, context) {
-  const id = context.params.id; // ✅ แบบนี้ถูกต้อง
+export async function GET(request, context) {
+  // 1) await context.params ก่อน
+  const params = await context.params;
+  const tutorId = parseInt(params.id, 10);
 
-  if (!id || isNaN(id)) {
-    return NextResponse.json({ error: "ID ไม่ถูกต้อง" }, { status: 400 });
+  // 2) ตรวจสอบ ID
+  if (isNaN(tutorId)) {
+    return NextResponse.json(
+      { error: "ID ไม่ถูกต้อง" },
+      { status: 400 }
+    );
   }
 
   try {
-    const tutor = await prisma.user.findUnique({
-      where: { user_id: parseInt(id, 10) },
+    // 3) ดึงข้อมูลติวเตอร์จากฐานข้อมูล
+    const userWithTutor = await prisma.user.findUnique({
+      where: { user_id: tutorId },
       include: { tutor: true },
     });
 
-    if (!tutor || !tutor.tutor) {
-      return NextResponse.json({ error: "ไม่พบบัญชีติวเตอร์" }, { status: 404 });
+    if (!userWithTutor || !userWithTutor.tutor) {
+      return NextResponse.json(
+        { error: "ไม่พบบัญชีติวเตอร์" },
+        { status: 404 }
+      );
     }
 
+    // 4) จัดรูปแบบ response
+    const t = userWithTutor.tutor;
     return NextResponse.json({
-      user_id: tutor.user_id,
-      name: tutor.name,
-      phone: tutor.phone,
-      email: tutor.email,
-      username: tutor.username,
-      profile_image: tutor.profile_image,
-      education_level: tutor.education_level,
-      document_id_card: tutor.tutor.verification_documents,
-      document_profile: tutor.profile_image,
-      document_certificate: tutor.tutor.education_background,
-      bio: tutor.tutor.bio,
-      experience_years: tutor.tutor.experience_years,
+      user_id: userWithTutor.user_id,
+      name: userWithTutor.name,
+      phone: userWithTutor.phone,
+      email: userWithTutor.email,
+      username: userWithTutor.username,
+      profile_image: userWithTutor.profile_image,
+      education_level: userWithTutor.education_level,
+      document_id_card: t.verification_documents,
+      document_profile: userWithTutor.profile_image,
+      document_certificate: t.education_background,
+      bio: t.bio,
+      experience_years: t.experience_years,
     });
   } catch (err) {
-    console.error("📛 ERROR:", err);
-    return NextResponse.json({ error: "เกิดข้อผิดพลาดที่ server" }, { status: 500 });
+    console.error("📛 ERROR fetching tutor:", err);
+    return NextResponse.json(
+      { error: "เกิดข้อผิดพลาดที่ server" },
+      { status: 500 }
+    );
   }
 }

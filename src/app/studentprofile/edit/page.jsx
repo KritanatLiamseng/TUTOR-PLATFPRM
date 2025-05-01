@@ -1,162 +1,153 @@
+/* src/app/studentprofile/edit/page.jsx */
+
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import {
-  FaArrowLeft,
-  FaUser,
-  FaPhone,
-  FaEnvelope,
-  FaIdCard,
-  FaLock,
-  FaUpload,
-} from "react-icons/fa";
+import { useRouter } from "next/navigation";
+import { FaArrowLeft, FaUpload, FaUser, FaPhone, FaEnvelope, FaIdCard, FaLock } from "react-icons/fa";
+import Header from "@/app/components/header";
 
-const EditProfile = () => {
+export default function EditStudentProfilePage() {
   const router = useRouter();
-  const [profile, setProfile] = useState({});
-  const [profileImage, setProfileImage] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [form, setForm] = useState({
+    profile_image: null,
+    previewUrl: "",
+    name: "",
+    phone: "",
+    email: "",
+    username: "",
+    password: ""
+  });
 
-  useEffect(() => {
-    const userId = localStorage.getItem("userId");
-    if (userId) {
-      fetch(`/api/user/${userId}`)
-        .then((res) => res.json())
-        .then((data) => {
-          setProfile(data);
-          if (data.profile_image) setProfileImage(data.profile_image);
-        });
-    }
-  }, []);
-
-  const handleSave = async () => {
-    const userId = localStorage.getItem("userId");
-    if (!userId) return;
-
-    const updatedProfile = {
-      ...profile,
-      profile_image: profileImage,
-    };
-
-    const res = await fetch(`/api/user/${userId}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(updatedProfile),
-    });
-
-    if (res.ok) {
-      router.push("/studentprofile");
-    } else {
-      alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
-    }
-  };
-
-  const handleBack = () => {
-    router.back();
-  };
-
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => setProfileImage(reader.result);
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleChange = (key, value) => {
-    setProfile((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const profileFields = [
-    {
-      label: "ชื่อ",
-      name: "name",
-      placeholder: "กรอกชื่อของคุณ",
-      icon: <FaUser className="text-sky-500 mr-3" />,
-    },
-    {
-      label: "เบอร์โทร",
-      name: "phone",
-      placeholder: "กรอกเบอร์โทรศัพท์",
-      icon: <FaPhone className="text-green-500 mr-3" />,
-    },
-    {
-      label: "อีเมล์",
-      name: "email",
-      placeholder: "กรอกอีเมล์ของคุณ",
-      icon: <FaEnvelope className="text-red-500 mr-3" />,
-    },
-    {
-      label: "ชื่อผู้ใช้",
-      name: "username",
-      placeholder: "กรอกชื่อผู้ใช้ (Username)",
-      icon: <FaIdCard className="text-purple-500 mr-3" />,
-    },
-    {
-      label: "รหัสผ่าน",
-      name: "password",
-      placeholder: "กรอกรหัสผ่านของคุณ",
-      icon: <FaLock className="text-gray-500 mr-3" />,
-      type: "password",
-    },
+  const menuItems = [
+    { label: "ประวัติการจอง", path: "/booking-history" },
+    { label: "บัญชีของฉัน", path: "/studentprofile" },
+    { label: "นโยบาย", path: "/policy" },
+    { label: "ศูนย์ช่วยเหลือ", path: "/support" },
+    { label: "รายงาน", path: "/report" },
+    { label: "ออกจากระบบ", onClick: () => { localStorage.removeItem("userId"); router.push("/login"); } }
   ];
 
+  useEffect(() => {
+    const id = localStorage.getItem("userId");
+    if (!id) {
+      setLoading(false);
+      return;
+    }
+    fetch(`/api/user/${id}`)
+      .then(res => res.json())
+      .then(data => {
+        setForm({
+          previewUrl: data.profile_image || "/default-profile.png",
+          name: data.name || "",
+          phone: data.phone || "",
+          email: data.email || "",
+          username: data.username || "",
+          password: ""
+        });
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleChange = e => {
+    const { name, value, files } = e.target;
+    if (name === "profile_image" && files.length) {
+      const file = files[0];
+      const reader = new FileReader();
+      reader.onload = () => {
+        setForm(prev => ({ ...prev, profile_image: file, previewUrl: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setForm(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const handleSave = async e => {
+    e.preventDefault();
+    setLoading(true);
+    const userId = localStorage.getItem("userId");
+    const payload = {
+      profile_image: form.previewUrl,
+      name: form.name,
+      phone: form.phone,
+      email: form.email,
+      username: form.username,
+      password: form.password || undefined,
+    };
+
+    try {
+      const res = await fetch(`/api/user/${userId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) router.push("/studentprofile");
+      else {
+        const err = await res.json();
+        alert(`❌ ${err.error}`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("❌ เกิดข้อผิดพลาดในการบันทึก");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) return <p className="text-center mt-10">กำลังโหลดข้อมูล...</p>;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-blue-50 to-white font-sans py-10 px-4">
-      <div className="max-w-4xl mx-auto bg-white shadow-xl rounded-2xl p-6 md:flex md:gap-10 items-center">
-        {/* Avatar */}
-        <div className="flex flex-col items-center md:items-start">
-          <div className="relative w-36 h-36 rounded-full overflow-hidden border-4 border-blue-200 shadow-xl">
-            <img
-              src={profileImage || "/default-profile.png"}
-              className="w-full h-full object-cover"
-              alt="avatar"
-            />
-            <label className="absolute bottom-0 right-0 bg-blue-500 text-white p-1 rounded-full cursor-pointer shadow hover:bg-blue-600">
-              <FaUpload size={14} />
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleImageChange}
-              />
-            </label>
-          </div>
-        </div>
+    <div className="min-h-screen bg-blue-50">
+      {/* Header flush to top */}
+      <Header dropdownItems={menuItems} />
 
-        {/* Form */}
-        <div className="flex-1 mt-6 md:mt-0 space-y-4">
-          {profileFields.map((field, index) => (
-            <div
-              key={index}
-              className="bg-blue-50 border border-blue-100 p-4 rounded-lg shadow-sm flex items-center"
-            >
-              {field.icon}
-              <input
-                type={field.type || "text"}
-                placeholder={field.placeholder}
-                value={profile[field.name] || ""}
-                onChange={(e) => handleChange(field.name, e.target.value)}
-                className="flex-1 ml-3 bg-transparent text-gray-700 placeholder-gray-400 focus:outline-none"
-              />
+      {/* Page content with padding */}
+      <div className="max-w-2xl mx-auto mt-4 px-4">
+        <button onClick={() => router.push("/studentprofile")} className="text-blue-600 hover:text-blue-800 mb-4 flex items-center gap-2">
+          <FaArrowLeft /> ย้อนกลับ
+        </button>
+
+        <div className="bg-white p-6 shadow-lg rounded-xl">
+          <h1 className="text-xl font-bold mb-4">✏️ แก้ไขโปรไฟล์นักศึกษา</h1>
+
+          <div className="mb-4">
+            <label className="block mb-1 text-sm font-medium text-gray-600">รูปโปรไฟล์</label>
+            <div className="flex items-center gap-4">
+              <img src={form.previewUrl || "/default-profile.png"} alt="preview" className="w-20 h-20 rounded-full object-cover border" />
+              <input type="file" name="profile_image" accept="image/*" onChange={handleChange} className="text-sm" />
             </div>
-          ))}
-
-          <div className="text-right">
-            <button
-              onClick={handleSave}
-              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-full text-sm shadow-md"
-            >
-              บันทึกข้อมูล
-            </button>
           </div>
+
+          <form onSubmit={handleSave} className="space-y-4">
+            <FormInput label="ชื่อ" name="name" value={form.name} onChange={handleChange} />
+            <FormInput label="เบอร์โทร" name="phone" value={form.phone} onChange={handleChange} />
+            <FormInput label="อีเมล" name="email" type="email" value={form.email} onChange={handleChange} />
+            <FormInput label="ชื่อผู้ใช้" name="username" value={form.username} onChange={handleChange} />
+            <FormInput label="รหัสผ่านใหม่" name="password" type="password" value={form.password} onChange={handleChange} />
+            <button disabled={loading} className="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg">
+              {loading ? "⌛ กำลังบันทึก..." : "💾 บันทึกข้อมูล"}
+            </button>
+          </form>
         </div>
       </div>
     </div>
   );
-};
+}
 
-export default EditProfile;
+function FormInput({ label, name, value, onChange, type = "text" }) {
+  return (
+    <div>
+      <label className="block mb-1 text-sm font-medium text-gray-600">{label}</label>
+      <input
+        name={name}
+        type={type}
+        className="w-full border border-gray-300 rounded px-3 py-2"
+        value={value}
+        onChange={onChange}
+      />
+    </div>
+  );
+}

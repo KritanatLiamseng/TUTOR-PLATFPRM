@@ -2,168 +2,169 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Header from "@/app/components/header";
+import BackButton from "@/app/components/BackButton";
 
 export default function NewCoursePage() {
-  const [subjects, setSubjects] = useState([]);
-  const [subjectId, setSubjectId] = useState("");
-  const [courseTitle, setCourseTitle] = useState("");
-  const [courseDescription, setCourseDescription] = useState("");
-  const [ratePerHour, setRatePerHour] = useState("");
-  const [teachingMethod, setTeachingMethod] = useState("");
-  const [level, setLevel] = useState("");
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const [subjects, setSubjects] = useState([]);
+  const [form, setForm] = useState({
+    subject_id: "",
+    course_title: "",
+    course_description: "",
+    rate_per_hour: "",
+    teaching_method: "",
+    level: "",
+  });
+  const [loading, setLoading] = useState(false);
+
+  const menuItems = [
+    { label: "คอร์สของฉัน", path: "/tutor/courses" },
+    { label: "บัญชีของฉัน", path: "/hometutor" },
+    { label: "ออกจากระบบ", onClick: () => {
+        localStorage.removeItem("userId");
+        router.push("/login");
+      }
+    },
+  ];
 
   useEffect(() => {
     fetch("/api/subjects")
-      .then((res) => res.json())
+      .then(r => r.json())
       .then(setSubjects)
-      .catch((err) => console.error("โหลดวิชาผิดพลาด", err));
+      .catch(console.error);
   }, []);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm(f => ({ ...f, [name]: value }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const userId = localStorage.getItem("userId");
-    if (!userId) return;
-
     setLoading(true);
-
+    const userId = localStorage.getItem("userId");
     const res = await fetch(`/api/tutor/${userId}/courses`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        subject_id: subjectId,
-        course_title: courseTitle,
-        course_description: courseDescription,
-        rate_per_hour: ratePerHour,
-        teaching_method: teachingMethod,  // จะส่งเป็น "online" หรือ "offline"
-        level,
-      }),
+      body: JSON.stringify(form),
     });
-
-    if (res.ok) {
-      router.push("/hometutor");
-    } else {
-      const error = await res.json();
-      alert("❌ เพิ่มคอร์สไม่สำเร็จ: " + error.error);
-    }
-
     setLoading(false);
+    if (res.ok) {
+      router.push("/tutor/courses");
+    } else {
+      const err = await res.json();
+      alert("❌ " + err.error);
+    }
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 bg-white shadow-lg rounded-xl p-6">
-      <h2 className="text-xl font-bold text-center text-blue-700 mb-6">
-        ➕ เพิ่มคอร์สใหม่
-      </h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* 1) เลือกวิชา */}
-        <div>
-          <label className="block mb-1 text-sm font-medium text-gray-600">
-            ชื่อวิชา
-          </label>
-          <select
-            value={subjectId}
-            onChange={(e) => setSubjectId(e.target.value)}
-            className="w-full border border-gray-300 rounded px-3 py-2"
-            required
-          >
-            <option value="">-- เลือกวิชา --</option>
-            {subjects.map((subject) => (
-              <option key={subject.subject_id} value={subject.subject_id}>
-                {subject.name}
-              </option>
-            ))}
-          </select>
-        </div>
+    <div className="min-h-screen bg-gray-50">
+      <Header dropdownItems={menuItems} />
 
-        {/* 2) ชื่อคอร์ส */}
-        <div>
-          <label className="block mb-1 text-sm font-medium text-gray-600">
-            ชื่อคอร์ส
-          </label>
-          <input
-            type="text"
-            value={courseTitle}
-            onChange={(e) => setCourseTitle(e.target.value)}
-            className="w-full border border-gray-300 rounded px-3 py-2"
-            placeholder="เช่น สอนคณิต ม.ต้น"
-            required
-          />
-        </div>
+      <div className="max-w-3xl mx-auto py-8 px-6">
+        <BackButton>ย้อนกลับ</BackButton>
+        <div className="bg-white rounded-2xl shadow-lg p-8 mt-4">
+          <h2 className="text-2xl font-semibold mb-6">➕ เพิ่มคอร์สใหม่</h2>
 
-        {/* 3) รายละเอียด */}
-        <div>
-          <label className="block mb-1 text-sm font-medium text-gray-600">
-            รายละเอียด
-          </label>
-          <textarea
-            value={courseDescription}
-            onChange={(e) => setCourseDescription(e.target.value)}
-            rows={4}
-            className="w-full border border-gray-300 rounded px-3 py-2"
-            placeholder="เช่น เน้นสอนไตรโกณ..."
-            required
-          />
-        </div>
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* วิชา */}
+            <div>
+              <label className="block mb-1">วิชา</label>
+              <select
+                name="subject_id"
+                value={form.subject_id}
+                onChange={handleChange}
+                className="w-full border border-gray-300 px-3 py-2 rounded"
+                required
+              >
+                <option value="">-- เลือกวิชา --</option>
+                {subjects.map(s => (
+                  <option key={s.subject_id} value={s.subject_id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-        {/* 4) ค่าบริการ */}
-        <div>
-          <label className="block mb-1 text-sm font-medium text-gray-600">
-            ค่าบริการ (บาท/ชม)
-          </label>
-          <input
-            type="number"
-            value={ratePerHour}
-            onChange={(e) => setRatePerHour(e.target.value)}
-            className="w-full border border-gray-300 rounded px-3 py-2"
-            min="0"
-            placeholder="เช่น 300"
-            required
-          />
-        </div>
+            {/* ชื่อคอร์ส */}
+            <div>
+              <label className="block mb-1">ชื่อคอร์ส</label>
+              <input
+                name="course_title"
+                value={form.course_title}
+                onChange={handleChange}
+                className="w-full border border-gray-300 px-3 py-2 rounded"
+                required
+              />
+            </div>
 
-        {/* 5) วิธีการสอน (แก้แล้ว) */}
-        <div>
-          <label className="block mb-1 text-sm font-medium text-gray-600">
-            วิธีการสอน
-          </label>
-          <select
-            value={teachingMethod}
-            onChange={(e) => setTeachingMethod(e.target.value)}
-            className="w-full border border-gray-300 rounded px-3 py-2"
-            required
-          >
-            <option value="">-- เลือกวิธีการสอน --</option>
-            <option value="online">ออนไลน์</option>
-            <option value="offline">ออฟไลน์</option>
-          </select>
-        </div>
+            {/* รายละเอียด (เต็มความกว้าง) */}
+            <div className="md:col-span-2">
+              <label className="block mb-1">รายละเอียด</label>
+              <textarea
+                name="course_description"
+                value={form.course_description}
+                onChange={handleChange}
+                rows={4}
+                className="w-full border border-gray-300 px-3 py-2 rounded"
+              />
+            </div>
 
-        {/* 6) ระดับชั้น */}
-        <div>
-          <label className="block mb-1 text-sm font-medium text-gray-600">
-            ระดับชั้น
-          </label>
-          <input
-            type="text"
-            value={level}
-            onChange={(e) => setLevel(e.target.value)}
-            className="w-full border border-gray-300 rounded px-3 py-2"
-            placeholder="เช่น ม.2, ปวช.1"
-            required
-          />
-        </div>
+            {/* ราคา */}
+            <div>
+              <label className="block mb-1">ราคา (บาท/ชม.)</label>
+              <input
+                name="rate_per_hour"
+                type="number"
+                value={form.rate_per_hour}
+                onChange={handleChange}
+                className="w-full border border-gray-300 px-3 py-2 rounded"
+                required
+              />
+            </div>
 
-        {/* ปุ่มส่ง */}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg"
-        >
-          {loading ? "⌛ กำลังบันทึก..." : "✅ บันทึกคอร์ส"}
-        </button>
-      </form>
+            {/* วิธีการสอน */}
+            <div>
+              <label className="block mb-1">วิธีการสอน</label>
+              <select
+                name="teaching_method"
+                value={form.teaching_method}
+                onChange={handleChange}
+                className="w-full border border-gray-300 px-3 py-2 rounded"
+                required
+              >
+                <option value="">-- เลือกวิธี --</option>
+                <option value="online">ออนไลน์</option>
+                <option value="offline">ออฟไลน์</option>
+              </select>
+            </div>
+
+            {/* ระดับ */}
+            <div>
+              <label className="block mb-1">ระดับ</label>
+              <input
+                name="level"
+                value={form.level}
+                onChange={handleChange}
+                className="w-full border border-gray-300 px-3 py-2 rounded"
+                required
+              />
+            </div>
+
+            {/* ปุ่มบันทึก */}
+            <div className="md:col-span-2">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded"
+              >
+                {loading ? "⌛ กำลังบันทึก..." : "💾 บันทึกคอร์ส"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
   );
 }

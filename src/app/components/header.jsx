@@ -17,7 +17,7 @@ const Header = ({ dropdownItems }) => {
   }, []);
 
   return (
-    <header className="bg-white/80 backdrop-blur-md shadow px-6 py-3 flex justify-between items-center relative z-20">
+    <header className="bg-white/80 backdrop-blur-md shadow px-6 py-3 flex justify-between items-center relative overflow-visible z-20">
       <h1 className="text-xl font-bold text-green-700">🎓 Tutor Platform</h1>
 
       {user ? (
@@ -29,7 +29,7 @@ const Header = ({ dropdownItems }) => {
             👋 สวัสดี, {user.name}
           </button>
           {openMenu && (
-            <div className="absolute right-0 mt-2 bg-white border rounded shadow-md w-48">
+            <div className="absolute right-0 mt-2 bg-white border rounded shadow-md w-48 z-50">
               {dropdownItems?.map((item, index) =>
                 item.onClick ? (
                   <button
@@ -37,7 +37,9 @@ const Header = ({ dropdownItems }) => {
                     onClick={item.onClick}
                     className={`block w-full text-left px-4 py-2 hover:bg-gray-100 ${
                       item.icon ? "flex items-center gap-2" : ""
-                    } ${item.label.includes("ออกจากระบบ") ? "text-red-500" : ""}`}
+                    } ${
+                      item.label.includes("ออกจากระบบ") ? "text-red-500" : ""
+                    }`}
                   >
                     {item.icon}
                     {item.label}
@@ -60,8 +62,12 @@ const Header = ({ dropdownItems }) => {
         </div>
       ) : (
         <div>
-          <Link href="/login" className="text-sm text-green-600 hover:underline mr-4">เข้าสู่ระบบ</Link>
-          <Link href="/register" className="text-sm text-green-600 hover:underline">สมัครสมาชิก</Link>
+          <Link href="/login" className="text-sm text-green-600 hover:underline mr-4">
+            เข้าสู่ระบบ
+          </Link>
+          <Link href="/register" className="text-sm text-green-600 hover:underline">
+            สมัครสมาชิก
+          </Link>
         </div>
       )}
     </header>

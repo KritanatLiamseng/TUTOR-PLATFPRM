@@ -3,21 +3,21 @@ import prisma from "@/prisma/client";
 
 // GET /api/tutor/[id]/courses
 export async function GET(request, context) {
+  // 1) await context.params
   const params = await context.params;
-  const tutorUserId = Number(params.id);
+  const tutorUserId = parseInt(params.id, 10);
   if (isNaN(tutorUserId)) {
     return NextResponse.json({ error: "ID ติวเตอร์ไม่ถูกต้อง" }, { status: 400 });
   }
 
-  const tutor = await prisma.tutor.findUnique({
-    where: { user_id: tutorUserId },
-  });
+  // 2) หา Tutor ตาม user_id
+  const tutor = await prisma.tutor.findUnique({ where: { user_id: tutorUserId } });
   if (!tutor) {
     return NextResponse.json({ error: "ไม่พบโปรไฟล์ติวเตอร์" }, { status: 404 });
   }
 
   try {
-    // เปลี่ยน prisma.tutor_courses → prisma.tutorCourse
+    // 3) ดึงคอร์สโดยใช้ prisma.tutorCourse
     const courses = await prisma.tutorCourse.findMany({
       where: { tutor_id: tutor.tutor_id },
       include: { subject: true },
@@ -50,14 +50,12 @@ export async function GET(request, context) {
 // POST /api/tutor/[id]/courses
 export async function POST(request, context) {
   const params = await context.params;
-  const tutorUserId = Number(params.id);
+  const tutorUserId = parseInt(params.id, 10);
   if (isNaN(tutorUserId)) {
     return NextResponse.json({ error: "ID ติวเตอร์ไม่ถูกต้อง" }, { status: 400 });
   }
 
-  const tutor = await prisma.tutor.findUnique({
-    where: { user_id: tutorUserId },
-  });
+  const tutor = await prisma.tutor.findUnique({ where: { user_id: tutorUserId } });
   if (!tutor) {
     return NextResponse.json({ error: "ไม่พบโปรไฟล์ติวเตอร์" }, { status: 404 });
   }
@@ -69,33 +67,23 @@ export async function POST(request, context) {
     return NextResponse.json({ error: "JSON payload ไม่ถูกต้อง" }, { status: 400 });
   }
 
-  const {
-    subject_id,
-    course_title,
-    course_description = "",
-    rate_per_hour,
-    teaching_method = "",
-    level = "",
-  } = body;
-
+  const { subject_id, course_title, rate_per_hour } = body;
   if (!subject_id || !course_title || rate_per_hour == null) {
     return NextResponse.json({ error: "ข้อมูลคอร์สไม่ครบถ้วน" }, { status: 422 });
   }
 
   try {
-    // เปลี่ยน prisma.tutor_courses → prisma.tutorCourse
     const newCourse = await prisma.tutorCourse.create({
       data: {
-        tutor_id: tutor.tutor_id,
-        subject_id: Number(subject_id),
-        course_title,
-        course_description,
-        rate_per_hour: Number(rate_per_hour),
-        teaching_method,
-        level,
+        tutor_id:         tutor.tutor_id,
+        subject_id:       Number(subject_id),
+        course_title:     body.course_title,
+        course_description: body.course_description ?? "",
+        rate_per_hour:    Number(body.rate_per_hour),
+        teaching_method:  body.teaching_method ?? "",
+        level:            body.level ?? "",
       },
     });
-
     return NextResponse.json(newCourse, { status: 201 });
   } catch (err) {
     console.error("❌ สร้างคอร์สล้มเหลว:", err);

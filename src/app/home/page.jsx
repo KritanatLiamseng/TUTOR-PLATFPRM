@@ -1,48 +1,55 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Header from "../components/header";
-import { FaSearch, FaStar } from "react-icons/fa";
+import Header from "@/app/components/header";
+import { FaSearch, FaStar, FaBook } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 
 export default function HomePage() {
   const router = useRouter();
+  const [user, setUser] = useState(null);
   const [tutors, setTutors] = useState([]);
   const [tutorCourses, setTutorCourses] = useState({});
-  const [user, setUser] = useState(null);
+  const [subjects, setSubjects] = useState([]);
 
-  // โหลดข้อมูลผู้ใช้
+  // โหลด user
   useEffect(() => {
-    const userId = localStorage.getItem("userId");
-    if (userId) {
-      fetch(`/api/user/${userId}`)
-        .then((res) => res.json())
-        .then((data) => setUser(data));
+    const uid = localStorage.getItem("userId");
+    if (uid) {
+      fetch(`/api/user/${uid}`)
+        .then(r => r.json())
+        .then(setUser)
+        .catch(console.error);
     }
   }, []);
 
-  // โหลดรายชื่อติวเตอร์
+  // โหลดติวเตอร์
   useEffect(() => {
     fetch("/api/tutors")
-      .then((res) => res.json())
-      .then((data) => {
-        setTutors(Array.isArray(data) ? data : []);
-      });
+      .then(r => r.json())
+      .then(data => setTutors(Array.isArray(data) ? data : []))
+      .catch(console.error);
   }, []);
 
-  // ดึงคอร์สของแต่ละติวเตอร์
+  // โหลดคอร์สของติวเตอร์แต่ละคน
   useEffect(() => {
-    tutors.forEach((tutor) => {
-      const tutorUserId = tutor.user_id;
-      if (!tutorUserId) return;
-
-      fetch(`/api/tutor/${tutorUserId}/courses`)
-        .then((res) => (res.ok ? res.json() : []))
-        .then((courses) => {
-          setTutorCourses((prev) => ({ ...prev, [tutorUserId]: courses }));
-        });
+    tutors.forEach(t => {
+      const key = t.user_id ?? t.id;
+      if (!key) return;
+      fetch(`/api/tutor/${key}/courses`)
+        .then(r => r.ok ? r.json() : [])
+        .then(cs => setTutorCourses(prev => ({ ...prev, [key]: cs })))
+        .catch(console.error);
     });
   }, [tutors]);
+
+  // **ใหม่** โหลดหมวดหมู่วิชาจาก API
+  useEffect(() => {
+    fetch("/api/subjects")
+      .then(r => r.json())
+      .then(data => setSubjects(Array.isArray(data) ? data : []))
+      .catch(console.error);
+  }, []);
 
   const menuItems = [
     { label: "ประวัติการจอง", path: "/booking-history" },
@@ -59,14 +66,8 @@ export default function HomePage() {
     },
   ];
 
-  const subjects = [
-    "คณิตศาสตร์", "วิทยาศาสตร์", "ภาษาอังกฤษ", "ภาษาไทย",
-    "สังคมศึกษา", "ประวัติศาสตร์", "ดนตรี", "ศิลปะ",
-    "การเขียนโปรแกรม", "เตรียมสอบเข้ามหาวิทยาลัย",
-  ];
-
   return (
-    <div className="min-h-screen bg-white font-sans">
+    <div className="min-h-screen bg-gray-50">
       <Header dropdownItems={menuItems} user={user} />
 
       {/* Hero */}
@@ -74,9 +75,7 @@ export default function HomePage() {
         <h1 className="text-4xl font-bold text-blue-800 mb-2">
           เรียนกับติวเตอร์คุณภาพ
         </h1>
-        <p className="text-gray-700 text-lg">
-          ค้นหา จอง และเรียนรู้ในที่เดียว
-        </p>
+        <p className="text-gray-700 text-lg">ค้นหา จอง และเรียนรู้ในที่เดียว</p>
         <div className="mt-6 flex justify-center">
           <div className="relative w-full max-w-md">
             <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -89,85 +88,78 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Subject Categories */}
-      <section className="px-6 py-6 max-w-6xl mx-auto">
-        <h2 className="text-xl font-bold text-blue-800 mb-4">
-          📘 หมวดหมู่วิชาหลัก
-        </h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* หมวดหมู่วิชาหลัก */}
+      <section className="px-6 py-8 max-w-6xl mx-auto">
+        <div className="flex items-center mb-4">
+          <FaBook className="text-blue-600 mr-2" />
+          <h2 className="text-xl font-bold text-blue-800">หมวดหมู่วิชาหลัก</h2>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {subjects.map((subj) => (
-            <div
-              key={subj}
-              className="bg-white border border-blue-200 text-blue-700 text-center p-4 rounded-lg hover:bg-blue-50 cursor-pointer"
+            <button
+              key={subj.subject_id}
+              onClick={() => router.push(`/home?subject=${subj.subject_id}`)}
+              className="py-2 px-4 border border-blue-300 rounded-lg text-blue-700 hover:bg-blue-50 transition"
             >
-              {subj}
-            </div>
+              {subj.name}
+            </button>
           ))}
         </div>
       </section>
 
-      {/* Tutor Recommended Grid */}
+      {/* ติวเตอร์แนะนำ */}
       <section className="px-6 py-10 max-w-6xl mx-auto">
         <h2 className="text-2xl font-bold text-center mb-8">ติวเตอร์แนะนำ</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-          {tutors.map((tutor) => {
-            const { user_id, name, subject, rating_average, rate_per_hour } = tutor;
-            const courses = tutorCourses[user_id] || [];
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+          {tutors.map((tutor, idx) => {
+            const key = tutor.user_id ?? idx;
+            const courses = tutorCourses[key] || [];
 
             return (
               <div
-                key={user_id}
-                className="bg-white rounded-2xl shadow hover:shadow-lg transition p-6 flex flex-col"
+                key={key}
+                className="bg-white rounded-xl shadow p-6 flex flex-col"
               >
-                {/* Avatar + Info */}
-                <div className="flex items-center space-x-4 mb-4">
-                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-xl font-semibold text-blue-600">
-                    {name.charAt(0)}
+                <div className="flex items-center mb-4">
+                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
+                    {tutor.name?.charAt(0) || "?"}
                   </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-800">{name}</h3>
-                    <p className="text-sm text-gray-500">{subject}</p>
-                  </div>
-                </div>
-
-                {/* Rating & Price */}
-                <div className="flex items-center justify-between mb-4 text-gray-700">
-                  <span className="flex items-center space-x-1">
-                    <FaStar className="text-yellow-400" />
-                    <span className="text-sm">{rating_average.toFixed(1)}</span>
-                  </span>
-                  <span className="text-sm font-medium">{rate_per_hour} ฿/ชม</span>
-                </div>
-
-                {/* Quick Course List */}
-                <div className="flex-1 mb-4 text-gray-600 text-sm space-y-1">
-                  {courses.slice(0, 3).map((c) => (
-                    <p key={c.course_id} className="truncate">
-                      • {c.course_title}
+                  <div className="ml-3">
+                    <p className="font-semibold">{tutor.name}</p>
+                    <p className="text-sm text-gray-500">
+                      {tutor.subject_name || "-"}
                     </p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between mb-4">
+                  <span className="flex items-center text-yellow-500">
+                    <FaStar /> <span className="ml-1">{tutor.rating_average?.toFixed(1) || "0.0"}</span>
+                  </span>
+                  <span className="font-medium">{tutor.rate_per_hour || "-"} ฿/ชม</span>
+                </div>
+                <ul className="flex-1 mb-4 text-sm text-gray-600 space-y-1">
+                  {courses.slice(0,3).map(c => (
+                    <li key={c.course_id} className="truncate">• {c.course_title}</li>
                   ))}
                   {courses.length > 3 && (
-                    <p
-                      key={`more-${user_id}`}
-                      className="text-xs text-blue-600 cursor-pointer hover:underline"
-                      onClick={() => router.push(`/tutor/courses/${user_id}`)}
+                    <li 
+                      onClick={() => router.push(`/tutor/courses/${key}`)}
+                      className="text-blue-600 cursor-pointer text-xs hover:underline"
                     >
                       ดูทั้งหมด ({courses.length})
-                    </p>
+                    </li>
                   )}
-                </div>
-
-                {/* Action Buttons */}
+                </ul>
                 <div className="mt-auto space-y-2">
                   <button
-                    onClick={() => router.push(`/tutor/courses/${user_id}`)}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-sm transition"
+                    onClick={() => router.push(`/tutor/courses/${key}`)}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg"
                   >
                     ดูโปรไฟล์ติวเตอร์
                   </button>
                   <button
-                    onClick={() => router.push(`/tutor/courses/${user_id}`)}
-                    className="w-full border border-blue-600 text-blue-600 py-2 rounded-lg text-sm hover:bg-blue-50 transition"
+                    onClick={() => router.push(`/tutor/courses/${key}`)}
+                    className="w-full border border-blue-600 text-blue-600 py-2 rounded-lg hover:bg-blue-50"
                   >
                     จองทันที
                   </button>
@@ -179,7 +171,7 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-blue-400 text-white py-6 text-center">
+      <footer className="bg-blue-400 text-white text-center py-6">
         Tutor Platform © {new Date().getFullYear()}
       </footer>
     </div>

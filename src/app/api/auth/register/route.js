@@ -11,30 +11,39 @@ export async function POST(request) {
       phone,
       username,
       password,
-      role,
-      isTutor,
-      bio,
-      experienceYears,
+      role,            // 'student' หรือ 'tutor'
+      bio,             // เฉพาะ tutor
+      experienceYears, // เฉพาะ tutor
+      ratePerHour,     // ถ้ามี
+      availableTime,   // ถ้ามี
+      educationLevel,  // ถ้ามี
     } = await request.json();
 
-    // ตรวจสอบว่ามีผู้ใช้นี้อยู่แล้วหรือไม่
-    const existingUser = await prisma.user.findFirst({
+    // --- 1) ตรวจข้อมูลเบื้องต้น ---
+    if (!name || !surname || !email || !username || !password) {
+      return NextResponse.json(
+        { error: "กรุณากรอกข้อมูลให้ครบถ้วน" },
+        { status: 422 }
+      );
+    }
+
+    // --- 2) เช็คซ้ำ username / email ---
+    const exists = await prisma.user.findFirst({
       where: {
         OR: [{ username }, { email }],
       },
     });
-
-    if (existingUser) {
+    if (exists) {
       return NextResponse.json(
-        { error: "ชื่อผู้ใช้หรืออีเมลมีอยู่แล้วในระบบ" },
+        { error: "ชื่อผู้ใช้หรืออีเมลนี้ถูกใช้งานไปแล้ว" },
         { status: 409 }
       );
     }
 
-    // เข้ารหัสรหัสผ่าน
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // --- 3) แฮชรหัสผ่าน ---
+    const hashed = await bcrypt.hash(password, 10);
 
-    // สร้างบัญชีผู้ใช้งาน
+    // --- 4) สร้าง User ---
     const newUser = await prisma.user.create({
       data: {
         name,
@@ -42,27 +51,43 @@ export async function POST(request) {
         email,
         phone,
         username,
-        password: hashedPassword,
+        password: hashed,
         role: role === "tutor" ? "tutor" : "student",
+        education_level: educationLevel ?? null,
       },
     });
 
-    // ถ้าเป็นติวเตอร์ → เพิ่มข้อมูลลงตาราง tutor
-    if (isTutor) {
+    // --- 5) ถ้าเป็น tutor ให้สร้างเรคอร์ดในตาราง tutors ---
+    if (role === "tutor") {
       await prisma.tutor.create({
         data: {
           user_id: newUser.user_id,
-          bio,
-          experience_years: parseInt(experienceYears, 10) || 0,
+          bio: bio ?? "",
+          experience_years: Number(experienceYears) || 0,
+          rate_per_hour: Number(ratePerHour) || 0,
+          available_time: availableTime ?? "",
+          education_background: "",   // หรือรับจาก payload เพิ่ม
         },
       });
     }
 
-    return NextResponse.json({ message: "สมัครสมาชิกสำเร็จ" });
-  } catch (error) {
-    console.error("Register Error:", error);
     return NextResponse.json(
-      { error: "เกิดข้อผิดพลาดที่ server" },
+      { message: "สมัครสมาชิกสำเร็จ" },
+      { status: 201 }
+    );
+  } catch (err) {
+    console.error("Register Error:", err);
+
+    // กรณี unique constraint ที่ไม่ใช่ user
+    if (err.code === "P2002") {
+      return NextResponse.json(
+        { error: "ข้อมูลซ้ำในระบบ (user หรือ tutor)" },
+        { status: 409 }
+      );
+    }
+
+    return NextResponse.json(
+      { error: "เกิดข้อผิดพลาดที่เซิร์ฟเวอร์" },
       { status: 500 }
     );
   }

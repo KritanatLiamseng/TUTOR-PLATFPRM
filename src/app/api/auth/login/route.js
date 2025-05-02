@@ -6,30 +6,35 @@ export async function POST(request) {
   try {
     const { username, password } = await request.json();
 
+    // 1) หาผู้ใช้ตาม username
     const user = await prisma.user.findUnique({
       where: { username },
     });
-
     if (!user) {
       return NextResponse.json({ error: "ไม่พบบัญชีผู้ใช้" }, { status: 404 });
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
+    // 2) ตรวจสอบรหัสผ่าน
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) {
       return NextResponse.json({ error: "รหัสผ่านไม่ถูกต้อง" }, { status: 401 });
     }
 
-    // สมมุติว่าเราสร้าง token สำหรับ auth (ในอนาคตใช้ JWT จริง)
-    const mockToken = `${user.username}-mock-token`;
+    // 3) สร้าง token (ตัวอย่าง mock)
+    const token = `${user.user_id}:${user.username}`;
 
+    // 4) ตอบกลับ
     return NextResponse.json({
       message: "เข้าสู่ระบบสำเร็จ",
-      role: user.role,
       user_id: user.user_id,
-      token: mockToken, // <-- ส่งกลับไปเก็บไว้ใน localStorage
+      role: user.role,
+      token,
     });
-  } catch (error) {
-    console.error("Login Error:", error);
-    return NextResponse.json({ error: "เกิดข้อผิดพลาดที่ server" }, { status: 500 });
+  } catch (err) {
+    console.error("Login Error:", err);
+    return NextResponse.json(
+      { error: "เกิดข้อผิดพลาดที่เซิร์ฟเวอร์" },
+      { status: 500 }
+    );
   }
 }

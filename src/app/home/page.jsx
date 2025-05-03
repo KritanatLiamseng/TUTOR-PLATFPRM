@@ -9,7 +9,6 @@ export default function HomePage() {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [tutors, setTutors] = useState([]);
-  const [tutorCourses, setTutorCourses] = useState({});
   const [subjects, setSubjects] = useState([]);
 
   // โหลด user
@@ -17,7 +16,7 @@ export default function HomePage() {
     const uid = localStorage.getItem("userId");
     if (uid) {
       fetch(`/api/user/${uid}`)
-        .then(r => r.json())
+        .then((r) => r.json())
         .then(setUser)
         .catch(console.error);
     }
@@ -26,28 +25,16 @@ export default function HomePage() {
   // โหลดติวเตอร์
   useEffect(() => {
     fetch("/api/tutors")
-      .then(r => r.json())
-      .then(data => setTutors(Array.isArray(data) ? data : []))
+      .then((r) => r.json())
+      .then((data) => setTutors(Array.isArray(data) ? data : []))
       .catch(console.error);
   }, []);
 
-  // โหลดคอร์สของติวเตอร์แต่ละคน
-  useEffect(() => {
-    tutors.forEach(t => {
-      const key = t.user_id ?? t.id;
-      if (!key) return;
-      fetch(`/api/tutor/${key}/courses`)
-        .then(r => r.ok ? r.json() : [])
-        .then(cs => setTutorCourses(prev => ({ ...prev, [key]: cs })))
-        .catch(console.error);
-    });
-  }, [tutors]);
-
-  // **ใหม่** โหลดหมวดหมู่วิชาจาก API
+  // โหลดหมวดหมู่วิชา
   useEffect(() => {
     fetch("/api/subjects")
-      .then(r => r.json())
-      .then(data => setSubjects(Array.isArray(data) ? data : []))
+      .then((r) => r.json())
+      .then((data) => setSubjects(Array.isArray(data) ? data : []))
       .catch(console.error);
   }, []);
 
@@ -111,62 +98,54 @@ export default function HomePage() {
       <section className="px-6 py-10 max-w-6xl mx-auto">
         <h2 className="text-2xl font-bold text-center mb-8">ติวเตอร์แนะนำ</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-          {tutors.map((tutor, idx) => {
-            const key = tutor.user_id ?? idx;
-            const courses = tutorCourses[key] || [];
-
-            return (
-              <div
-                key={key}
-                className="bg-white rounded-xl shadow p-6 flex flex-col"
-              >
-                <div className="flex items-center mb-4">
-                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
-                    {tutor.name?.charAt(0) || "?"}
-                  </div>
-                  <div className="ml-3">
-                    <p className="font-semibold">{tutor.name}</p>
-                    <p className="text-sm text-gray-500">
-                      {tutor.subject_name || "-"}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between mb-4">
-                  <span className="flex items-center text-yellow-500">
-                    <FaStar /> <span className="ml-1">{tutor.rating_average?.toFixed(1) || "0.0"}</span>
-                  </span>
-                  <span className="font-medium">{tutor.rate_per_hour || "-"} ฿/ชม</span>
-                </div>
-                <ul className="flex-1 mb-4 text-sm text-gray-600 space-y-1">
-                  {courses.slice(0,3).map(c => (
-                    <li key={c.course_id} className="truncate">• {c.course_title}</li>
-                  ))}
-                  {courses.length > 3 && (
-                    <li 
-                      onClick={() => router.push(`/tutor/courses/${key}`)}
-                      className="text-blue-600 cursor-pointer text-xs hover:underline"
-                    >
-                      ดูทั้งหมด ({courses.length})
-                    </li>
-                  )}
-                </ul>
-                <div className="mt-auto space-y-2">
-                  <button
-                    onClick={() => router.push(`/tutor/courses/${key}`)}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg"
-                  >
-                    ดูโปรไฟล์ติวเตอร์
-                  </button>
-                  <button
-                    onClick={() => router.push(`/tutor/courses/${key}`)}
-                    className="w-full border border-blue-600 text-blue-600 py-2 rounded-lg hover:bg-blue-50"
-                  >
-                    จองทันที
-                  </button>
+          {tutors.map((tutor) => (
+            <div
+              key={tutor.id}  // ← ใช้ id ที่มาจาก API (unique)
+              className="bg-white rounded-xl shadow p-6 flex flex-col"
+            >
+              {/* Avatar + Name */}
+              <div className="flex items-center mb-4">
+                <img
+                  src={tutor.profile_image || "/default-profile.png"}
+                  alt="avatar"
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+                <div className="ml-3">
+                  <p className="font-semibold">{tutor.name}</p>
+                  <p className="text-sm text-gray-500">{tutor.bio}</p>
                 </div>
               </div>
-            );
-          })}
+
+              {/* Rating & Rate */}
+              <div className="flex items-center justify-between mb-4">
+                <span className="flex items-center text-yellow-500">
+                  <FaStar />{" "}
+                  <span className="ml-1">
+                    {tutor.rating_average.toFixed(1)}
+                  </span>
+                </span>
+                <span className="font-medium">
+                  {tutor.rate_per_hour} ฿/ชม
+                </span>
+              </div>
+
+              {/* ปุ่ม */}
+              <div className="mt-auto space-y-2">
+                <button
+                  onClick={() => router.push(`/tutor/${tutor.id}`)}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg"
+                >
+                  ดูโปรไฟล์ติวเตอร์
+                </button>
+                <button
+                  onClick={() => router.push(`/tutor/${tutor.id}`)}
+                  className="w-full border border-blue-600 text-blue-600 py-2 rounded-lg hover:bg-blue-50"
+                >
+                  จองทันที
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 

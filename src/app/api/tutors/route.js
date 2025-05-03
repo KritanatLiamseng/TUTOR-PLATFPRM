@@ -5,24 +5,23 @@ import { NextResponse } from "next/server";
 export async function GET() {
   try {
     const tutors = await prisma.tutor.findMany({
-      where: { is_active: true },      // ← เปลี่ยนตรงนี้
+      where: { is_active: true },
       include: {
         user: {
           select: {
             name: true,
-            profile_image: true,       // ← ตาม @map("profile_image")
+            profile_image: true,
           },
         },
       },
-      orderBy: {
-        tutor_id: "asc",               // ← ใช้ tutor_id ไม่ใช่ tutorId
-      },
+      orderBy: { tutor_id: "asc" },
+      take: 6, // ← เอาออกหรือปรับตามต้องการ
     });
 
     const formatted = tutors.map((t) => ({
       id:               t.tutor_id,
       name:             t.user?.name ?? "-",
-      subject:          t.bio ?? "ไม่ระบุวิชา",
+      bio:              t.bio ?? "ไม่ระบุ",           // ← เปลี่ยนจาก subject
       rate_per_hour:    t.rate_per_hour ?? 0,
       rating_average:   t.rating_average ?? 0,
       profile_image:    t.user?.profile_image ?? null,

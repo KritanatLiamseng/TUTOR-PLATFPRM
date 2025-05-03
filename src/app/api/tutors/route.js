@@ -1,10 +1,10 @@
-// src/app/api/tutors/route.js
+// File: src/app/api/tutors/route.js
 import prisma from "@/prisma/client";
 import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    const tutors = await prisma.tutor.findMany({
+    const tutorRows = await prisma.tutor.findMany({
       where: { is_active: true },
       include: {
         user: {
@@ -14,17 +14,19 @@ export async function GET() {
           },
         },
       },
-      orderBy: { tutor_id: "asc" },
-      take: 6, // ← เอาออกหรือปรับตามต้องการ
+      orderBy: {
+        tutor_id: "asc",
+      },
+      take: 6, // แสดง 6 คนแรก ถ้าไม่ต้องการจำกัดก็ลบบรรทัดนี้ได้
     });
 
-    const formatted = tutors.map((t) => ({
+    const formatted = tutorRows.map((t) => ({
       id:               t.tutor_id,
       name:             t.user?.name ?? "-",
-      bio:              t.bio ?? "ไม่ระบุ",           // ← เปลี่ยนจาก subject
+      bio:              t.bio ?? "-",
       rate_per_hour:    t.rate_per_hour ?? 0,
       rating_average:   t.rating_average ?? 0,
-      profile_image:    t.user?.profile_image ?? null,
+      profile_image:    t.user?.profile_image ?? "/default-profile.png",
     }));
 
     return NextResponse.json(formatted, { status: 200 });

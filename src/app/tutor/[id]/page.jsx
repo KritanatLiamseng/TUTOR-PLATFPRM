@@ -1,21 +1,27 @@
 // File: src/app/tutor/[id]/page.jsx
 import prisma from "@/prisma/client";
 import BackButton from "@/app/components/BackButton";
+import Link from "next/link";
 
 export default async function TutorDetailPage({ params }) {
-  const tutorId = parseInt(params.id, 10);
+  // 1) รอ params แล้วดึง id มา
+  const { id } = await params;
+  const tutorId = parseInt(id, 10);
   if (isNaN(tutorId)) {
-    return <p className="text-center mt-10 text-red-500">ID ไม่ถูกต้อง</p>;
+    return (
+      <p className="text-center mt-10 text-red-500">
+        ID ไม่ถูกต้อง
+      </p>
+    );
   }
 
-  // ---- แก้จุดนี้ ----
+  // 2) หา record ในตาราง tutor โดยใช้ tutor_id
   const tutor = await prisma.tutor.findUnique({
     where: { tutor_id: tutorId },
-    include: {
-      user: true,           // ดึงข้อมูล user มาใช้งาน
-    },
+    include: { user: true },
   });
 
+  // 3) ถ้าไม่เจอ → 404
   if (!tutor) {
     return (
       <p className="text-center mt-10 text-red-500">
@@ -24,28 +30,109 @@ export default async function TutorDetailPage({ params }) {
     );
   }
 
+  // 4) ดึงคอร์สของติวเตอร์ พร้อมชื่อวิชา
+  const courses = await prisma.tutorCourse.findMany({
+    where: { tutor_id: tutor.tutor_id },
+    include: { subject: true },
+    orderBy: { course_id: "desc" },
+  });
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-16">
       <div className="max-w-4xl mx-auto p-6">
         <BackButton>← ย้อนกลับ</BackButton>
+
+        {/* โปรไฟล์ติวเตอร์ */}
         <div className="mt-6 bg-white rounded-xl shadow p-8">
-          <h1 className="text-3xl font-bold mb-4">
-            {tutor.user.name} {tutor.user.surname}
-          </h1>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-gray-700">
+          <div className="flex items-center space-x-6">
+            <img
+              src={tutor.user.profile_image || "/default-profile.png"}
+              alt="avatar"
+              className="w-24 h-24 rounded-full object-cover border"
+            />
             <div>
-              <p><strong>อีเมล:</strong> {tutor.user.email}</p>
-              <p><strong>โทรศัพท์:</strong> {tutor.user.phone || "-"}</p>
-              <p><strong>Username:</strong> {tutor.user.username}</p>
+              <h1 className="text-3xl font-bold">
+                {tutor.user.name} {tutor.user.surname}
+              </h1>
+              <p className="text-gray-600">ติวเตอร์</p>
+            </div>
+            <Link href="/edittutor">
+              <button className="ml-auto bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                แก้ไขโปรไฟล์
+              </button>
+            </Link>
+          </div>
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 p-6 rounded-lg">
+            <div>
+              <p>
+                <strong>Username:</strong> {tutor.user.username}
+              </p>
+              <p>
+                <strong>ประสบการณ์:</strong> {tutor.experience_years} ปี
+              </p>
             </div>
             <div>
-              <p><strong>ระดับการศึกษา:</strong> {tutor.user.education_level || "-"}</p>
-              <p><strong>ประสบการณ์:</strong> {tutor.experience_years} ปี</p>
-              <p><strong>Bio:</strong> {tutor.bio || "-"}</p>
-              <p><strong>ราคา:</strong> {tutor.rate_per_hour ?? "-"} ฿/ชม.</p>
-              <p><strong>เวลาที่ว่าง:</strong> {tutor.available_time || "-"}</p>
+              <p>
+                <strong>ระดับการศึกษา:</strong> {tutor.user.education_level || "-"}
+              </p>
+              <p>
+                <strong>เวลาที่ว่าง:</strong> {tutor.available_time || "-"}
+              </p>
             </div>
           </div>
+        </div>
+
+        {/* คอร์สที่เปิดสอน */}
+        <div className="mt-10 bg-white rounded-xl shadow p-8">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-semibold">คอร์สที่เปิดสอน</h2>
+            <Link href="/tutor/courses/new">
+              <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                + เพิ่มคอร์สใหม่
+              </button>
+            </Link>
+          </div>
+
+          {courses.length > 0 ? (
+            <div className="grid gap-6 sm:grid-cols-2">
+              {courses.map((c) => (
+                <div
+                  key={c.course_id}
+                  className="bg-gray-50 p-6 rounded-lg border"
+                >
+                  <h3 className="text-lg font-medium mb-1">
+                    {c.course_title}
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-2">
+                    วิชา: {c.subject?.name || "-"} ({c.level || "-"})
+                  </p>
+                  <p className="text-gray-700 mb-2 line-clamp-2">
+                    {c.course_description || "ไม่ระบุรายละเอียด"}
+                  </p>
+                  <div className="flex justify-between items-center text-gray-800 mb-3">
+                    <span>ราคา: {c.rate_per_hour ?? "-"} ฿/ชม</span>
+                    <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                      {c.teaching_method === "online" ? "ออนไลน์" : "ออฟไลน์"}
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Link href={`/tutor/courses/${c.course_id}`}>
+                      <button className="flex-1 bg-blue-600 text-white py-1 rounded hover:bg-blue-700">
+                        ดูรายละเอียด
+                      </button>
+                    </Link>
+                    <Link href={`/tutor/courses/edit/${c.course_id}`}>
+                      <button className="flex-1 border border-blue-600 text-blue-600 py-1 rounded hover:bg-blue-50">
+                        ✏️ แก้ไข
+                      </button>
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500">ยังไม่มีคอร์สเปิดสอน</p>
+          )}
         </div>
       </div>
     </div>

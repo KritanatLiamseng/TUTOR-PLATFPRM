@@ -1,3 +1,4 @@
+// File: src/app/tutor/courses/[course_id]/edit/page.jsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -6,11 +7,13 @@ import Header from "@/app/components/header";
 import BackButton from "@/app/components/BackButton";
 
 export default function EditCoursePage() {
-  const router = useRouter();
+  const router     = useRouter();
   const { course_id } = useParams();
-  const [loading, setLoading] = useState(true);
+
+  const [loading, setLoading]   = useState(true);
   const [subjects, setSubjects] = useState([]);
-  const [form, setForm] = useState({
+  const [error, setError]       = useState("");      // เก็บข้อความ error
+  const [form, setForm]         = useState({
     subject_id:         "",
     course_title:       "",
     course_description: "",
@@ -21,33 +24,40 @@ export default function EditCoursePage() {
 
   useEffect(() => {
     const userId = localStorage.getItem("userId");
-    if (!userId) return;
+    if (!userId) {
+      router.push("/login");
+      return;
+    }
 
-    // โหลดรายการวิชา
-    fetch("/api/subjects")
-      .then(res => res.json())
-      .then(setSubjects)
-      .catch(console.error);
+    (async () => {
+      try {
+        // โหลดหมวดหมู่วิชา
+        const r1 = await fetch("/api/subjects");
+        if (!r1.ok) throw new Error("โหลดหมวดหมู่วิชาไม่สำเร็จ");
+        const subs = await r1.json();
+        setSubjects(subs);
 
-    // โหลดข้อมูลคอร์สเดิม
-    fetch(`/api/tutor/${userId}/courses/${course_id}`)
-      .then(res => {
-        if (!res.ok) throw new Error();
-        return res.json();
-      })
-      .then(data => {
+        // โหลดข้อมูลคอร์ส
+        const r2 = await fetch(`/api/tutor/${userId}/courses/${course_id}`);
+        if (!r2.ok) throw new Error("โหลดข้อมูลคอร์สไม่สำเร็จ");
+        const course = await r2.json();
+
         setForm({
-          subject_id:         data.subject_id || "",
-          course_title:       data.course_title || "",
-          course_description: data.course_description || "",
-          rate_per_hour:      data.rate_per_hour?.toString() || "",
-          teaching_method:    data.teaching_method || "",
-          level:              data.level || "",
+          subject_id:         course.subject_id?.toString() || "",
+          course_title:       course.course_title || "",
+          course_description: course.course_description || "",
+          rate_per_hour:      course.rate_per_hour?.toString() || "",
+          teaching_method:    course.teaching_method || "",
+          level:              course.level || "",
         });
-      })
-      .catch(() => alert("โหลดข้อมูลคอร์สล้มเหลว"))
-      .finally(() => setLoading(false));
-  }, [course_id]);
+      } catch (err) {
+        console.error(err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [course_id, router]);
 
   const handleChange = e => {
     const { name, value } = e.target;
@@ -58,31 +68,41 @@ export default function EditCoursePage() {
     e.preventDefault();
     setLoading(true);
     const userId = localStorage.getItem("userId");
-    const res = await fetch(`/api/tutor/${userId}/courses/${course_id}`, {
-      method:  "PUT",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({
-        ...form,
-        rate_per_hour: Number(form.rate_per_hour),
-      }),
-    });
-    setLoading(false);
 
-    if (res.ok) {
+    try {
+      const res = await fetch(`/api/tutor/${userId}/courses/${course_id}`, {
+        method:  "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subject_id:         Number(form.subject_id),
+          course_title:       form.course_title,
+          course_description: form.course_description,
+          rate_per_hour:      Number(form.rate_per_hour),
+          teaching_method:    form.teaching_method,
+          level:              form.level,
+        }),
+      });
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({}));
+        throw new Error(error || "อัปเดตคอร์สไม่สำเร็จ");
+      }
       router.push("/tutor/courses");
-    } else {
-      const err = await res.json();
-      alert("❌ อัปเดตล้มเหลว: " + err.error);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   const menuItems = [
     { label: "คอร์สของฉัน", path: "/tutor/courses" },
     { label: "บัญชีของฉัน", path: "/hometutor" },
-    { label: "ออกจากระบบ", onClick: () => {
+    {
+      label: "ออกจากระบบ",
+      onClick: () => {
         localStorage.removeItem("userId");
         router.push("/login");
-      }
+      },
     },
   ];
 
@@ -93,111 +113,106 @@ export default function EditCoursePage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header dropdownItems={menuItems} />
-
       <div className="max-w-3xl mx-auto py-8 px-6">
-        <BackButton>ย้อนกลับ</BackButton>
+        <BackButton>← ย้อนกลับ</BackButton>
 
-        <div className="bg-white rounded-2xl shadow-lg p-8 mt-4">
-          <h2 className="text-2xl font-semibold mb-6">✏️ แก้ไขคอร์ส</h2>
-
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* วิชา */}
-            <div>
-              <label className="block mb-1 text-gray-700">วิชา</label>
-              <select
-                name="subject_id"
-                value={form.subject_id}
-                onChange={handleChange}
-                className="w-full border border-gray-300 px-3 py-2 rounded"
-                required
-              >
-                <option value="">-- เลือกวิชา --</option>
-                {subjects.map(s => (
-                  <option key={s.subject_id} value={s.subject_id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* ชื่อคอร์ส */}
-            <div>
-              <label className="block mb-1 text-gray-700">ชื่อคอร์ส</label>
-              <input
-                name="course_title"
-                value={form.course_title}
-                onChange={handleChange}
-                className="w-full border border-gray-300 px-3 py-2 rounded"
-                required
-              />
-            </div>
-
-            {/* รายละเอียด (เต็มแถว) */}
-            <div className="md:col-span-2">
-              <label className="block mb-1 text-gray-700">รายละเอียด</label>
-              <textarea
-                name="course_description"
-                value={form.course_description}
-                onChange={handleChange}
-                rows={4}
-                className="w-full border border-gray-300 px-3 py-2 rounded"
-              />
-            </div>
-
-            {/* ค่าบริการ */}
-            <div>
-              <label className="block mb-1 text-gray-700">ราคา (บาท/ชม.)</label>
-              <input
-                name="rate_per_hour"
-                type="number"
-                min="0"
-                value={form.rate_per_hour}
-                onChange={handleChange}
-                className="w-full border border-gray-300 px-3 py-2 rounded"
-                required
-              />
-            </div>
-
-            {/* วิธีการสอน */}
-            <div>
-              <label className="block mb-1 text-gray-700">วิธีการสอน</label>
-              <select
-                name="teaching_method"
-                value={form.teaching_method}
-                onChange={handleChange}
-                className="w-full border border-gray-300 px-3 py-2 rounded"
-                required
-              >
-                <option value="">-- เลือกวิธีการสอน --</option>
-                <option value="online">ออนไลน์</option>
-                <option value="offline">ออฟไลน์</option>
-              </select>
-            </div>
-
-            {/* ระดับ */}
-            <div>
-              <label className="block mb-1 text-gray-700">ระดับ</label>
-              <input
-                name="level"
-                value={form.level}
-                onChange={handleChange}
-                className="w-full border border-gray-300 px-3 py-2 rounded"
-                placeholder="เช่น ม.4"
-                required
-              />
-            </div>
-
-            {/* ปุ่มบันทึก */}
-            <div className="md:col-span-2">
-              <button
-                type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded"
-              >
-                💾 บันทึกการแก้ไข
-              </button>
-            </div>
-          </form>
-        </div>
+        {error ? (
+          <p className="text-center text-red-500 mt-10">{error}</p>
+        ) : (
+          <div className="bg-white rounded-2xl shadow-lg p-8 mt-4">
+            <h2 className="text-2xl font-semibold mb-6">✏️ แก้ไขคอร์ส</h2>
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* วิชา */}
+              <div>
+                <label className="block mb-1 text-gray-700">วิชา</label>
+                <select
+                  name="subject_id"
+                  value={form.subject_id}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 px-3 py-2 rounded"
+                  required
+                >
+                  <option value="">-- เลือกวิชา --</option>
+                  {subjects.map((s) => (
+                    <option key={s.subject_id} value={s.subject_id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {/* ชื่อคอร์ส */}
+              <div>
+                <label className="block mb-1 text-gray-700">ชื่อคอร์ส</label>
+                <input
+                  name="course_title"
+                  value={form.course_title}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 px-3 py-2 rounded"
+                  required
+                />
+              </div>
+              {/* รายละเอียด */}
+              <div className="md:col-span-2">
+                <label className="block mb-1 text-gray-700">รายละเอียด</label>
+                <textarea
+                  name="course_description"
+                  value={form.course_description}
+                  onChange={handleChange}
+                  rows={4}
+                  className="w-full border border-gray-300 px-3 py-2 rounded"
+                />
+              </div>
+              {/* ราคา */}
+              <div>
+                <label className="block mb-1 text-gray-700">ราคา (บาท/ชม.)</label>
+                <input
+                  name="rate_per_hour"
+                  type="number"
+                  min="0"
+                  value={form.rate_per_hour}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 px-3 py-2 rounded"
+                  required
+                />
+              </div>
+              {/* วิธีการสอน */}
+              <div>
+                <label className="block mb-1 text-gray-700">วิธีการสอน</label>
+                <select
+                  name="teaching_method"
+                  value={form.teaching_method}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 px-3 py-2 rounded"
+                  required
+                >
+                  <option value="">-- เลือกวิธีการสอน --</option>
+                  <option value="online">ออนไลน์</option>
+                  <option value="offline">ออฟไลน์</option>
+                </select>
+              </div>
+              {/* ระดับ */}
+              <div>
+                <label className="block mb-1 text-gray-700">ระดับ</label>
+                <input
+                  name="level"
+                  value={form.level}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 px-3 py-2 rounded"
+                  placeholder="เช่น ม.4"
+                />
+              </div>
+              {/* ปุ่มบันทึก */}
+              <div className="md:col-span-2">
+                <button
+                  type="submit"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded"
+                >
+                  💾 บันทึกการแก้ไข
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
       </div>
     </div>
   );

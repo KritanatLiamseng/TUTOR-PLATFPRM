@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Header from "@/app/components/header";
 import { FaSearch, FaStar, FaBook } from "react-icons/fa";
-import { useRouter } from "next/navigation";
 
 export default function HomePage() {
   const router = useRouter();
@@ -11,7 +11,7 @@ export default function HomePage() {
   const [tutors, setTutors] = useState([]);
   const [subjects, setSubjects] = useState([]);
 
-  // โหลด user
+  // โหลดข้อมูล user
   useEffect(() => {
     const uid = localStorage.getItem("userId");
     if (uid) {
@@ -100,13 +100,13 @@ export default function HomePage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
           {tutors.map((tutor) => (
             <div
-              key={tutor.id}  // ← ใช้ id ที่มาจาก API (unique)
+              key={tutor.id}
               className="bg-white rounded-xl shadow p-6 flex flex-col"
             >
               {/* Avatar + Name */}
               <div className="flex items-center mb-4">
                 <img
-                  src={tutor.profile_image || "/default-profile.png"}
+                  src={tutor.profile_image}
                   alt="avatar"
                   className="w-10 h-10 rounded-full object-cover"
                 />
@@ -119,7 +119,7 @@ export default function HomePage() {
               {/* Rating & Rate */}
               <div className="flex items-center justify-between mb-4">
                 <span className="flex items-center text-yellow-500">
-                  <FaStar />{" "}
+                  <FaStar />
                   <span className="ml-1">
                     {tutor.rating_average.toFixed(1)}
                   </span>
@@ -141,7 +141,7 @@ export default function HomePage() {
                   onClick={() => router.push(`/tutor/${tutor.id}`)}
                   className="w-full border border-blue-600 text-blue-600 py-2 rounded-lg hover:bg-blue-50"
                 >
-                  จองทันที
+                  ดูคอร์สที่ติวเตอร์สอน
                 </button>
               </div>
             </div>

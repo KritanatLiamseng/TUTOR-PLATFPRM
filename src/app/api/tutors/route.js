@@ -1,4 +1,4 @@
-// File: src/app/api/tutors/route.js
+// src/app/api/tutors/route.js
 import prisma from "@/prisma/client";
 import { NextResponse } from "next/server";
 
@@ -8,16 +8,11 @@ export async function GET() {
       where: { is_active: true },
       include: {
         user: {
-          select: {
-            name: true,
-            profile_image: true,
-          },
+          select: { name: true, profile_image: true },
         },
       },
-      orderBy: {
-        tutor_id: "asc",
-      },
-      take: 6, // แสดง 6 คนแรก ถ้าไม่ต้องการจำกัดก็ลบบรรทัดนี้ได้
+      orderBy: { tutor_id: "asc" },
+      take: 6, // ถ้าไม่ต้องการจำกัดจำนวน ให้ลบบรรทัดนี้
     });
 
     const formatted = tutorRows.map((t) => ({
@@ -29,7 +24,7 @@ export async function GET() {
       profile_image:    t.user?.profile_image ?? "/default-profile.png",
     }));
 
-    return NextResponse.json(formatted, { status: 200 });
+    return NextResponse.json(formatted);
   } catch (error) {
     console.error("❌ โหลดติวเตอร์ล้มเหลว:", error);
     return NextResponse.json(

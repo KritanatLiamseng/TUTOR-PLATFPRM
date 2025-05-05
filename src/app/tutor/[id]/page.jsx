@@ -4,7 +4,7 @@ import BackButton from "@/app/components/BackButton";
 import Link from "next/link";
 
 export default async function TutorDetailPage({ params }) {
-  // 1) รอ params แล้วดึง id มา
+  // 1) ต้องรอ params ก่อน แล้วค่อย destructure id
   const { id } = await params;
   const tutorId = parseInt(id, 10);
   if (isNaN(tutorId)) {
@@ -56,11 +56,6 @@ export default async function TutorDetailPage({ params }) {
               </h1>
               <p className="text-gray-600">ติวเตอร์</p>
             </div>
-            <Link href="/edittutor">
-              <button className="ml-auto bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                แก้ไขโปรไฟล์
-              </button>
-            </Link>
           </div>
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 p-6 rounded-lg">
             <div>
@@ -86,11 +81,8 @@ export default async function TutorDetailPage({ params }) {
         <div className="mt-10 bg-white rounded-xl shadow p-8">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-semibold">คอร์สที่เปิดสอน</h2>
-            <Link href="/tutor/courses/new">
-              <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                + เพิ่มคอร์สใหม่
-              </button>
-            </Link>
+            {/* path แก้เป็นตรงกับโครงสร้าง */}
+            
           </div>
 
           {courses.length > 0 ? (
@@ -115,18 +107,7 @@ export default async function TutorDetailPage({ params }) {
                       {c.teaching_method === "online" ? "ออนไลน์" : "ออฟไลน์"}
                     </span>
                   </div>
-                  <div className="flex gap-2">
-                    <Link href={`/tutor/courses/${c.course_id}`}>
-                      <button className="flex-1 bg-blue-600 text-white py-1 rounded hover:bg-blue-700">
-                        ดูรายละเอียด
-                      </button>
-                    </Link>
-                    <Link href={`/tutor/courses/edit/${c.course_id}`}>
-                      <button className="flex-1 border border-blue-600 text-blue-600 py-1 rounded hover:bg-blue-50">
-                        ✏️ แก้ไข
-                      </button>
-                    </Link>
-                  </div>
+                 
                 </div>
               ))}
             </div>

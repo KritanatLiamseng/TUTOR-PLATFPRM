@@ -1,9 +1,10 @@
-// File: src/app/api/tutor/[id]/courses/[course_id]/route.js
 import { NextResponse } from "next/server";
 import prisma from "@/prisma/client";
 
 // GET /api/tutor/[id]/courses/[course_id]
-export async function GET(request, { params }) {
+export async function GET(request, context) {
+  // 1) รอ params ก่อน
+  const params = await context.params;
   const tutorUserId = parseInt(params.id, 10);
   const courseId    = parseInt(params.course_id, 10);
 
@@ -11,7 +12,6 @@ export async function GET(request, { params }) {
     return NextResponse.json({ error: "ID ไม่ถูกต้อง" }, { status: 400 });
   }
 
-  // ตรวจว่าผู้ใช้นี้เป็นติวเตอร์จริงไหม
   const tutor = await prisma.tutor.findUnique({
     where: { user_id: tutorUserId }
   });
@@ -19,7 +19,6 @@ export async function GET(request, { params }) {
     return NextResponse.json({ error: "ไม่พบโปรไฟล์ติวเตอร์" }, { status: 404 });
   }
 
-  // ดึงคอร์สเดียว
   const course = await prisma.tutorCourse.findUnique({
     where: { course_id: courseId },
     include: { subject: true }
@@ -41,7 +40,8 @@ export async function GET(request, { params }) {
 }
 
 // PUT /api/tutor/[id]/courses/[course_id]
-export async function PUT(request, { params }) {
+export async function PUT(request, context) {
+  const params = await context.params;
   const tutorUserId = parseInt(params.id, 10);
   const courseId    = parseInt(params.course_id, 10);
 
@@ -49,7 +49,6 @@ export async function PUT(request, { params }) {
     return NextResponse.json({ error: "ID ไม่ถูกต้อง" }, { status: 400 });
   }
 
-  // ตรวจติวเตอร์
   const tutor = await prisma.tutor.findUnique({
     where: { user_id: tutorUserId }
   });
@@ -57,7 +56,6 @@ export async function PUT(request, { params }) {
     return NextResponse.json({ error: "ไม่พบโปรไฟล์ติวเตอร์" }, { status: 404 });
   }
 
-  // ตรวจคอร์สเป็นของติวเตอร์คนนี้ไหม
   const existing = await prisma.tutorCourse.findUnique({
     where: { course_id: courseId }
   });
@@ -80,7 +78,6 @@ export async function PUT(request, { params }) {
     teaching_method = "",
     level = "",
   } = body;
-
   if (!subject_id || !course_title || rate_per_hour == null) {
     return NextResponse.json({ error: "ข้อมูลคอร์สไม่ครบถ้วน" }, { status: 422 });
   }

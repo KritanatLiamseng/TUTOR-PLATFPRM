@@ -1,4 +1,3 @@
-// File: src/app/tutor/courses/[course_id]/edit/page.jsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -7,12 +6,12 @@ import Header from "@/app/components/header";
 import BackButton from "@/app/components/BackButton";
 
 export default function EditCoursePage() {
-  const router     = useRouter();
+  const router       = useRouter();
   const { course_id } = useParams();
 
   const [loading, setLoading]   = useState(true);
   const [subjects, setSubjects] = useState([]);
-  const [error, setError]       = useState("");      // เก็บข้อความ error
+  const [error, setError]       = useState("");
   const [form, setForm]         = useState({
     subject_id:         "",
     course_title:       "",
@@ -31,16 +30,15 @@ export default function EditCoursePage() {
 
     (async () => {
       try {
-        // โหลดหมวดหมู่วิชา
-        const r1 = await fetch("/api/subjects");
-        if (!r1.ok) throw new Error("โหลดหมวดหมู่วิชาไม่สำเร็จ");
-        const subs = await r1.json();
-        setSubjects(subs);
+        // ดึงหมวดวิชา
+        const resp1 = await fetch("/api/subjects");
+        if (!resp1.ok) throw new Error("โหลดหมวดหมู่ไม่สำเร็จ");
+        setSubjects(await resp1.json());
 
-        // โหลดข้อมูลคอร์ส
-        const r2 = await fetch(`/api/tutor/${userId}/courses/${course_id}`);
-        if (!r2.ok) throw new Error("โหลดข้อมูลคอร์สไม่สำเร็จ");
-        const course = await r2.json();
+        // ดึงข้อมูลคอร์ส
+        const resp2 = await fetch(`/api/tutor/${userId}/courses/${course_id}`);
+        if (!resp2.ok) throw new Error("โหลดข้อมูลคอร์สไม่สำเร็จ");
+        const course = await resp2.json();
 
         setForm({
           subject_id:         course.subject_id?.toString() || "",
@@ -50,9 +48,9 @@ export default function EditCoursePage() {
           teaching_method:    course.teaching_method || "",
           level:              course.level || "",
         });
-      } catch (err) {
-        console.error(err);
-        setError(err.message);
+      } catch (e) {
+        console.error(e);
+        setError(e.message);
       } finally {
         setLoading(false);
       }
@@ -86,9 +84,10 @@ export default function EditCoursePage() {
         const { error } = await res.json().catch(() => ({}));
         throw new Error(error || "อัปเดตคอร์สไม่สำเร็จ");
       }
+      // เปลี่ยนเส้นทางกลับไปที่รายการคอร์ส
       router.push("/tutor/courses");
-    } catch (err) {
-      alert(err.message);
+    } catch (e) {
+      alert(e.message);
     } finally {
       setLoading(false);
     }
@@ -97,12 +96,12 @@ export default function EditCoursePage() {
   const menuItems = [
     { label: "คอร์สของฉัน", path: "/tutor/courses" },
     { label: "บัญชีของฉัน", path: "/hometutor" },
-    {
-      label: "ออกจากระบบ",
+    { 
+      label: "ออกจากระบบ", 
       onClick: () => {
         localStorage.removeItem("userId");
         router.push("/login");
-      },
+      }
     },
   ];
 
@@ -114,7 +113,10 @@ export default function EditCoursePage() {
     <div className="min-h-screen bg-gray-50">
       <Header dropdownItems={menuItems} />
       <div className="max-w-3xl mx-auto py-8 px-6">
-        <BackButton>← ย้อนกลับ</BackButton>
+        {/* ปุ่มย้อนกลับ → ไปที่ /tutor/courses */}
+        <BackButton onClick={() => router.push("/tutor/courses")}>
+          ← ย้อนกลับ
+        </BackButton>
 
         {error ? (
           <p className="text-center text-red-500 mt-10">{error}</p>
@@ -133,7 +135,7 @@ export default function EditCoursePage() {
                   required
                 >
                   <option value="">-- เลือกวิชา --</option>
-                  {subjects.map((s) => (
+                  {subjects.map(s => (
                     <option key={s.subject_id} value={s.subject_id}>
                       {s.name}
                     </option>

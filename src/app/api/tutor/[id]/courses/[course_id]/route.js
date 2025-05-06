@@ -1,32 +1,37 @@
+// File: src/app/api/course/[course_id]/route.js
 import { NextResponse } from "next/server";
 import prisma from "@/prisma/client";
 
-// GET /api/tutor/[id]/courses/[course_id]
+// GET /api/course/[course_id]
 export async function GET(request, context) {
-  // 1) รอ params ก่อน
-  const params = await context.params;
-  const tutorUserId = parseInt(params.id, 10);
-  const courseId    = parseInt(params.course_id, 10);
-
-  if (isNaN(tutorUserId) || isNaN(courseId)) {
-    return NextResponse.json({ error: "ID ไม่ถูกต้อง" }, { status: 400 });
+  // 1) รอ params ก่อน แล้วค่อยใช้
+  const { params } = await context;
+  const courseId = parseInt(params.course_id, 10);
+  if (isNaN(courseId)) {
+    return NextResponse.json({ error: "ID คอร์สไม่ถูกต้อง" }, { status: 400 });
   }
 
-  const tutor = await prisma.tutor.findUnique({
-    where: { user_id: tutorUserId }
-  });
-  if (!tutor) {
-    return NextResponse.json({ error: "ไม่พบโปรไฟล์ติวเตอร์" }, { status: 404 });
-  }
-
+  // 2) ดึงข้อมูลคอร์ส พร้อมชื่อวิชา
   const course = await prisma.tutorCourse.findUnique({
     where: { course_id: courseId },
-    include: { subject: true }
+    include: {
+      subject: true,
+      tutor: {
+        include: {
+          user: {
+            select: { name: true, surname: true, profile_image: true },
+          },
+        },
+      },
+    },
   });
-  if (!course || course.tutor_id !== tutor.tutor_id) {
+
+  // 3) ไม่เจอ → 404
+  if (!course) {
     return NextResponse.json({ error: "ไม่พบคอร์สนี้" }, { status: 404 });
   }
 
+  // 4) คืนข้อมูลตามรูปแบบเดียวกับ route เดิม
   return NextResponse.json({
     course_id:          course.course_id,
     subject_id:         course.subject_id,
@@ -36,40 +41,31 @@ export async function GET(request, context) {
     rate_per_hour:      course.rate_per_hour,
     teaching_method:    course.teaching_method,
     level:              course.level,
+    // ข้อมูล tutor (เพิ่มเติม)
+    tutor: {
+      tutor_id:     course.tutor.tutor_id,
+      name:         course.tutor.user.name,
+      surname:      course.tutor.user.surname,
+      profile_image:course.tutor.user.profile_image,
+    },
   }, { status: 200 });
 }
 
-// PUT /api/tutor/[id]/courses/[course_id]
+// PUT /api/course/[course_id]
 export async function PUT(request, context) {
-  const params = await context.params;
-  const tutorUserId = parseInt(params.id, 10);
-  const courseId    = parseInt(params.course_id, 10);
-
-  if (isNaN(tutorUserId) || isNaN(courseId)) {
-    return NextResponse.json({ error: "ID ไม่ถูกต้อง" }, { status: 400 });
+  const { params } = await context;
+  const courseId = parseInt(params.course_id, 10);
+  if (isNaN(courseId)) {
+    return NextResponse.json({ error: "ID คอร์สไม่ถูกต้อง" }, { status: 400 });
   }
 
-  const tutor = await prisma.tutor.findUnique({
-    where: { user_id: tutorUserId }
-  });
-  if (!tutor) {
-    return NextResponse.json({ error: "ไม่พบโปรไฟล์ติวเตอร์" }, { status: 404 });
-  }
-
-  const existing = await prisma.tutorCourse.findUnique({
-    where: { course_id: courseId }
-  });
-  if (!existing || existing.tutor_id !== tutor.tutor_id) {
-    return NextResponse.json({ error: "ไม่พบคอร์สนี้" }, { status: 404 });
-  }
-
+  // 1) อ่าน payload
   let body;
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "JSON payload ไม่ถูกต้อง" }, { status: 400 });
   }
-
   const {
     subject_id,
     course_title,
@@ -78,10 +74,13 @@ export async function PUT(request, context) {
     teaching_method = "",
     level = "",
   } = body;
+
+  // 2) ตรวจข้อมูลครบ
   if (!subject_id || !course_title || rate_per_hour == null) {
     return NextResponse.json({ error: "ข้อมูลคอร์สไม่ครบถ้วน" }, { status: 422 });
   }
 
+  // 3) อัปเดต
   try {
     const updated = await prisma.tutorCourse.update({
       where: { course_id: courseId },
@@ -94,7 +93,13 @@ export async function PUT(request, context) {
         level,
       },
     });
-    return NextResponse.json(updated, { status: 200 });
+
+    return NextResponse.json({
+      course_id:   updated.course_id,
+      subject_id:  updated.subject_id,
+      course_title:updated.course_title,
+      // … คืนส่วนที่จำเป็นเหมือน GET เหมือนเดิม
+    }, { status: 200 });
   } catch (err) {
     console.error("❌ อัปเดตคอร์สล้มเหลว:", err);
     return NextResponse.json(

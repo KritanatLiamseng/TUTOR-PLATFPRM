@@ -1,10 +1,11 @@
 // File: src/app/tutor/[id]/page.jsx
 import prisma from "@/prisma/client";
 import BackButton from "@/app/components/BackButton";
+import BookingButton from "@/app/components/BookingButton";
 import Link from "next/link";
 
 export default async function TutorDetailPage({ params }) {
-  // 1) ต้องรอ params ก่อน แล้วค่อย destructure id
+  // 1) รอ params แล้ว destructure id
   const { id } = await params;
   const tutorId = parseInt(id, 10);
   if (isNaN(tutorId)) {
@@ -15,13 +16,13 @@ export default async function TutorDetailPage({ params }) {
     );
   }
 
-  // 2) หา record ในตาราง tutor โดยใช้ tutor_id
+  // 2) โหลดโปรไฟล์ติวเตอร์
   const tutor = await prisma.tutor.findUnique({
     where: { tutor_id: tutorId },
     include: { user: true },
   });
 
-  // 3) ถ้าไม่เจอ → 404
+  // 3) ถ้าไม่เจอ → แสดง error
   if (!tutor) {
     return (
       <p className="text-center mt-10 text-red-500">
@@ -30,7 +31,7 @@ export default async function TutorDetailPage({ params }) {
     );
   }
 
-  // 4) ดึงคอร์สของติวเตอร์ พร้อมชื่อวิชา
+  // 4) ดึงคอร์สของติวเตอร์
   const courses = await prisma.tutorCourse.findMany({
     where: { tutor_id: tutor.tutor_id },
     include: { subject: true },
@@ -81,8 +82,11 @@ export default async function TutorDetailPage({ params }) {
         <div className="mt-10 bg-white rounded-xl shadow p-8">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-semibold">คอร์สที่เปิดสอน</h2>
-            {/* path แก้เป็นตรงกับโครงสร้าง */}
-            
+            <Link href={`/tutor/${tutorId}/courses/new`}>
+              <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                + เพิ่มคอร์สใหม่
+              </button>
+            </Link>
           </div>
 
           {courses.length > 0 ? (
@@ -90,7 +94,7 @@ export default async function TutorDetailPage({ params }) {
               {courses.map((c) => (
                 <div
                   key={c.course_id}
-                  className="bg-gray-50 p-6 rounded-lg border"
+                  className="bg-gray-50 p-6 rounded-lg border flex flex-col"
                 >
                   <h3 className="text-lg font-medium mb-1">
                     {c.course_title}
@@ -107,7 +111,16 @@ export default async function TutorDetailPage({ params }) {
                       {c.teaching_method === "online" ? "ออนไลน์" : "ออฟไลน์"}
                     </span>
                   </div>
-                 
+
+                  {/* ปุ่มจอง ชิดขวา และดูเป็นปุ่มจริง */}
+                  <div className="mt-auto flex justify-end">
+                    <BookingButton
+                      courseId={c.course_id}
+                      className="bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-2 rounded"
+                    >
+                      จองคอร์ส
+                    </BookingButton>
+                  </div>
                 </div>
               ))}
             </div>

@@ -1,38 +1,46 @@
-// src/app/api/tutor/[id]/route.js
 import prisma from "@/prisma/client";
 import { NextResponse } from "next/server";
 
-export async function GET(request, { params }) {
-  const tutorUserId = parseInt(params.id, 10);
-  if (isNaN(tutorUserId)) {
+// GET /api/tutor/[id]
+export async function GET(request, context) {
+  // 1) await context เพื่อปลดล็อก params
+  const { params } = await context;
+  const tutorUserId = Number(params.id);
+  if (Number.isNaN(tutorUserId)) {
     return NextResponse.json({ error: "ID ไม่ถูกต้อง" }, { status: 400 });
   }
 
   try {
+    // 2) หา user + tutor profile
     const userWithTutor = await prisma.user.findUnique({
       where: { user_id: tutorUserId },
       include: { tutor: true },
     });
-    if (!userWithTutor || !userWithTutor.tutor) {
-      return NextResponse.json({ error: "ไม่พบบัญชีติวเตอร์" }, { status: 404 });
+    if (!userWithTutor?.tutor) {
+      return NextResponse.json(
+        { error: "ไม่พบบัญชีติวเตอร์" },
+        { status: 404 }
+      );
     }
 
-    const u = userWithTutor;
-    const t = u.tutor;
+    const { user_id, name, surname, phone, email, username, profile_image, education_level, tutor } =
+      userWithTutor;
+
+    // 3) คืน JSON ตามต้องการ
     return NextResponse.json({
-      user_id:            u.user_id,
-      name:               u.name,
-      surname:            u.surname,
-      phone:              u.phone,
-      email:              u.email,
-      username:           u.username,
-      profile_image:      u.profile_image,
-      education_level:    u.education_level,
-      bio:                t.bio,
-      experience_years:   t.experience_years,
-      rate_per_hour:      t.rate_per_hour,
-      available_time:     t.available_time,
-      education_background: t.education_background,
+      user_id,
+      name,
+      surname,
+      phone,
+      email,
+      username,
+      profile_image,
+      education_level,
+      bio: tutor.bio,
+      experience_years: tutor.experience_years,
+      rate_per_hour: tutor.rate_per_hour,
+      available_time: tutor.available_time,
+      education_background: tutor.education_background,
     });
   } catch (err) {
     console.error(err);

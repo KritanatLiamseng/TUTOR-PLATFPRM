@@ -69,7 +69,7 @@ export default function HomeTutorPage() {
   };
 
   const menuItems = [
-    { label: "ประวัติการจอง", path: "/booking-history", icon: <FaHistory /> },
+    { label: "ประวัติการจอง", path: "/booking-historytutor", icon: <FaHistory /> },
     { label: "บัญชีของฉัน", path: "/hometutor", icon: <FaWallet /> },
     { label: "นโยบาย", path: "/policy", icon: <FaFileAlt /> },
     { label: "ศูนย์ช่วยเหลือ", path: "/support", icon: <FaQuestionCircle /> },

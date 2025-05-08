@@ -1,3 +1,4 @@
+// src/app/tutor/courses/new/page.jsx  (หรือ wherever you put NewCoursePage)
 "use client";
 
 import { useEffect, useState } from "react";
@@ -21,40 +22,52 @@ export default function NewCoursePage() {
   const menuItems = [
     { label: "คอร์สของฉัน", path: "/tutor/courses" },
     { label: "บัญชีของฉัน", path: "/hometutor" },
-    { label: "ออกจากระบบ", onClick: () => {
+    {
+      label: "ออกจากระบบ",
+      onClick: () => {
         localStorage.removeItem("userId");
         router.push("/login");
-      }
+      },
     },
   ];
 
   useEffect(() => {
     fetch("/api/subjects")
-      .then(r => r.json())
+      .then((r) => r.json())
       .then(setSubjects)
       .catch(console.error);
   }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm(f => ({ ...f, [name]: value }));
+    setForm((f) => ({ ...f, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    const userId = localStorage.getItem("userId");
-    const res = await fetch(`/api/tutor/${userId}/courses`, {
+
+    const tutorId = localStorage.getItem("userId");
+    const res = await fetch(`/api/tutor/${tutorId}/courses`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
+
     setLoading(false);
+
     if (res.ok) {
-      router.push("/tutor/courses");
+      alert("✅ สร้างคอร์สสำเร็จแล้ว");
+      router.push("/hometutor");     // ← กลับไปดู list คอร์สของติวเตอร์
     } else {
-      const err = await res.json();
-      alert("❌ " + err.error);
+      // ถ้า res.json() เจอ EOF หรือไม่เป็น JSON มันจะ throw, 
+      // เรา catch แล้ว fallback
+      let errMsg = "ไม่สามารถสร้างคอร์สได้";
+      try {
+        const err = await res.json();
+        if (err.error) errMsg = err.error;
+      } catch {}
+      alert("❌ " + errMsg);
     }
   };
 
@@ -63,11 +76,14 @@ export default function NewCoursePage() {
       <Header dropdownItems={menuItems} />
 
       <div className="max-w-3xl mx-auto py-8 px-6">
-        <BackButton>ย้อนกลับ</BackButton>
+        <BackButton>← ย้อนกลับ</BackButton>
         <div className="bg-white rounded-2xl shadow-lg p-8 mt-4">
           <h2 className="text-2xl font-semibold mb-6">➕ เพิ่มคอร์สใหม่</h2>
 
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <form
+            onSubmit={handleSubmit}
+            className="grid grid-cols-1 md:grid-cols-2 gap-6"
+          >
             {/* วิชา */}
             <div>
               <label className="block mb-1">วิชา</label>
@@ -79,7 +95,7 @@ export default function NewCoursePage() {
                 required
               >
                 <option value="">-- เลือกวิชา --</option>
-                {subjects.map(s => (
+                {subjects.map((s) => (
                   <option key={s.subject_id} value={s.subject_id}>
                     {s.name}
                   </option>
@@ -99,7 +115,7 @@ export default function NewCoursePage() {
               />
             </div>
 
-            {/* รายละเอียด (เต็มความกว้าง) */}
+            {/* รายละเอียด */}
             <div className="md:col-span-2">
               <label className="block mb-1">รายละเอียด</label>
               <textarea

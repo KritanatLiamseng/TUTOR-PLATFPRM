@@ -4,9 +4,7 @@ import prisma from "@/prisma/client";
 
 // GET /api/bookings/:id
 export async function GET(request, context) {
-  // ต้อง await context ก่อน
-  const { params } = await context;
-  const id = Number(params.id);
+  const id = Number(context.params.id);
   if (Number.isNaN(id)) {
     return NextResponse.json({ error: "ID ไม่ถูกต้อง" }, { status: 400 });
   }
@@ -22,10 +20,10 @@ export async function GET(request, context) {
         },
         course: {
           select: {
-            course_title:    true,
-            rate_per_hour:   true,
+            course_title: true,
+            rate_per_hour: true,
             teaching_method: true,
-            subject:         { select: { name: true } },
+            subject: { select: { name: true } },
             tutor: {
               select: {
                 user: { select: { name: true, surname: true, profile_image: true } },
@@ -34,7 +32,7 @@ export async function GET(request, context) {
           },
         },
         payments: true,
-        chats:    true,
+        chats: true,
       },
     });
     if (!booking) {
@@ -47,10 +45,9 @@ export async function GET(request, context) {
   }
 }
 
-// PUT /api/bookings/:id
+// ✅ PUT /api/bookings/:id — อัปเดตสถานะเท่านั้น ปลอดภัย ไม่กระทบข้อมูลอื่น
 export async function PUT(request, context) {
-  const { params } = await context;
-  const id = Number(params.id);
+  const id = Number(context.params.id);
   if (Number.isNaN(id)) {
     return NextResponse.json({ error: "ID ไม่ถูกต้อง" }, { status: 400 });
   }
@@ -62,11 +59,16 @@ export async function PUT(request, context) {
     return NextResponse.json({ error: "Payload ไม่เป็น JSON" }, { status: 400 });
   }
 
-  // (แนะนำให้ validate body ก่อนอัปเดตจริง)
+  const { status } = body;
+  const validStatus = ["pending", "confirmed", "cancelled"];
+  if (!validStatus.includes(status)) {
+    return NextResponse.json({ error: "สถานะไม่ถูกต้อง" }, { status: 422 });
+  }
+
   try {
     const updated = await prisma.booking.update({
       where: { booking_id: id },
-      data:  body,
+      data: { status },
     });
     return NextResponse.json(updated);
   } catch (err) {
@@ -77,8 +79,7 @@ export async function PUT(request, context) {
 
 // DELETE /api/bookings/:id
 export async function DELETE(request, context) {
-  const { params } = await context;
-  const id = Number(params.id);
+  const id = Number(context.params.id);
   if (Number.isNaN(id)) {
     return NextResponse.json({ error: "ID ไม่ถูกต้อง" }, { status: 400 });
   }

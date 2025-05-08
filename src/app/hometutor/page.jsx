@@ -189,12 +189,7 @@ export default function HomeTutorPage() {
                     </span>
                   </div>
                   <div className="mt-4">
-                    <Link
-                      href={`/tutor/${tutorId}/courses/${course.course_id}`}
-                      className="inline-block bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded"
-                    >
-                      ดูรายละเอียด
-                    </Link>
+                   
                   </div>
                 </div>
               ))}

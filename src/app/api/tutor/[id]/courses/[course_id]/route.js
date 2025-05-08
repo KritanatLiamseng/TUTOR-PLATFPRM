@@ -1,9 +1,10 @@
+// File: /api/tutor/[id]/courses/[course_id]/route.js
 import { NextResponse } from "next/server";
 import prisma from "@/prisma/client";
 
-// GET, PUT, DELETE /api/tutor/:id/courses/:course_id
+// GET /api/tutor/[id]/courses/[course_id]
 export async function GET(request, context) {
-  const { params } = context;   // ✂️ เอา await context ออก
+  const { params } = context;
   const courseId = Number(params.course_id);
   if (Number.isNaN(courseId)) {
     return NextResponse.json({ error: "ID คอร์สไม่ถูกต้อง" }, { status: 400 });
@@ -42,8 +43,9 @@ export async function GET(request, context) {
   });
 }
 
+// PUT /api/tutor/[id]/courses/[course_id]
 export async function PUT(request, context) {
-  const { params } = context;   // ✂️ เอา await context ออก
+  const { params } = context;
   const courseId = Number(params.course_id);
   if (Number.isNaN(courseId)) {
     return NextResponse.json({ error: "ID คอร์สไม่ถูกต้อง" }, { status: 400 });
@@ -68,7 +70,7 @@ export async function PUT(request, context) {
   if (
     Number.isNaN(subject_id) ||
     Number.isNaN(rate_per_hour) ||
-    !course_title
+    typeof course_title !== "string"
   ) {
     return NextResponse.json({ error: "ข้อมูลคอร์สไม่ครบถ้วน" }, { status: 422 });
   }
@@ -99,8 +101,9 @@ export async function PUT(request, context) {
   }
 }
 
+// DELETE /api/tutor/[id]/courses/[course_id]
 export async function DELETE(request, context) {
-  const { params } = context;   // ✂️ เอา await context ออก
+  const { params } = context;
   const tutorUserId = Number(params.id);
   const courseId    = Number(params.course_id);
   if (Number.isNaN(tutorUserId) || Number.isNaN(courseId)) {

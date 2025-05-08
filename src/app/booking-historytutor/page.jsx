@@ -1,65 +1,83 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter }         from "next/navigation";
-import Header                from "@/app/components/header";
-import {
-  FaChalkboardTeacher,
-  FaCalendarAlt,
-  FaMoneyBillAlt,
-} from "react-icons/fa";
+import { useRouter } from "next/navigation";
+import Header from "@/app/components/header";
 
 export default function BookingHistoryTutorPage() {
   const router = useRouter();
-  const [user, setUser]         = useState(null);
+  const [user, setUser] = useState(null);
   const [bookings, setBookings] = useState([]);
-  const [loading, setLoading]   = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const tutorId = localStorage.getItem("userId");
-    if (!tutorId) {
+    const userId = localStorage.getItem("userId");
+    if (!userId) {
       router.push("/login");
       return;
     }
 
-    // โหลดข้อมูลติวเตอร์ สำหรับแสดงใน Header
-    fetch(`/api/user/${tutorId}`)
+    fetch(`/api/tutor/${userId}`)
       .then((r) => r.json())
-      .then((u) => { if (!u.error) setUser(u); })
-      .catch(console.error);
-
-    // โหลดรายการจองจากนักเรียน
-    fetch(`/api/bookings?tutor_id=${tutorId}`)
-      .then(async (res) => {
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error(err.error || "Failed to load bookings");
+      .then((tutor) => {
+        if (!tutor || tutor.error || !tutor.tutor_id) {
+          console.warn("⚠️ ไม่พบโปรไฟล์ติวเตอร์");
+          setLoading(false);
+          return;
         }
-        return res.json();
+
+        fetch(`/api/user/${userId}`)
+          .then((r) => r.json())
+          .then((u) => {
+            if (!u.error) setUser(u);
+          });
+
+        fetch(`/api/bookings?tutor_id=${tutor.tutor_id}`)
+          .then((res) => {
+            if (!res.ok) throw new Error("โหลด booking ไม่สำเร็จ");
+            return res.json();
+          })
+          .then(setBookings)
+          .catch((err) => {
+            console.error("❌ โหลด booking ล้มเหลว:", err);
+            alert("❌ ไม่สามารถโหลดประวัติการจองได้");
+          })
+          .finally(() => setLoading(false));
       })
-      .then(setBookings)
       .catch((err) => {
-        console.error("❌ โหลดจองจากนักเรียนไม่สำเร็จ:", err);
-        alert("❌ ไม่สามารถโหลดประวัติการจองได้");
-      })
-      .finally(() => setLoading(false));
+        console.error("❌ โหลดโปรไฟล์ติวเตอร์ล้มเหลว:", err);
+        setLoading(false);
+      });
   }, [router]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <p className="text-gray-600">กำลังโหลดรายการจองจากนักเรียน…</p>
-      </div>
-    );
-  }
+  const updateStatus = async (bookingId, newStatus) => {
+    if (!window.confirm("ยืนยันการเปลี่ยนสถานะ?")) return;
 
-  // แก้ไข menuItems ให้ครบถ้วน
+    try {
+      const res = await fetch(`/api/bookings/${bookingId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (!res.ok) throw new Error("อัปเดตสถานะไม่สำเร็จ");
+
+      setBookings((prev) =>
+        prev.map((b) =>
+          b.booking_id === bookingId ? { ...b, status: newStatus } : b
+        )
+      );
+    } catch (err) {
+      alert("❌ เกิดข้อผิดพลาด: " + err.message);
+    }
+  };
+
   const menuItems = [
     { label: "การจองจากนักเรียน", path: "/booking-historytutor" },
-    { label: "โปรไฟล์ของคุณ",      path: "/tutorprofile" },
-    { label: "นโยบาย",           path: "/policy" },
-    { label: "ศูนย์ช่วยเหลือ",   path: "/support" },
-    { label: "รายงาน",           path: "/report" },
+    { label: "โปรไฟล์ของคุณ", path: "/tutorprofile" },
+    { label: "นโยบาย", path: "/policy" },
+    { label: "ศูนย์ช่วยเหลือ", path: "/support" },
+    { label: "รายงาน", path: "/report" },
     {
       label: "ออกจากระบบ",
       onClick: () => {
@@ -68,6 +86,14 @@ export default function BookingHistoryTutorPage() {
       },
     },
   ];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-gray-600">กำลังโหลดรายการจองจากนักเรียน…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -87,52 +113,65 @@ export default function BookingHistoryTutorPage() {
             {bookings.map((b) => (
               <div
                 key={b.booking_id}
-                className="bg-white rounded-2xl shadow p-6 flex flex-col justify-between"
+                className="bg-white border border-gray-200 rounded-xl shadow-sm p-6 flex flex-col gap-3 hover:shadow-lg transition"
               >
-                {/* นักเรียน */}
-                <div className="flex items-center space-x-3 mb-4">
+                <div className="flex items-center gap-3">
                   <img
                     src={b.student.profile_image || "/default-profile.png"}
                     alt={`${b.student.name} ${b.student.surname}`}
-                    className="w-12 h-12 rounded-full object-cover"
+                    className="w-10 h-10 rounded-full object-cover border border-gray-300"
                   />
                   <div>
-                    <p className="font-semibold">
+                    <p className="font-semibold text-gray-800">
                       {b.student.name} {b.student.surname}
                     </p>
                     <p className="text-sm text-gray-500">
-                      วิชา {b.course.subject_name}
+                      วิชา: {b.course.subject_name}
                     </p>
                   </div>
                 </div>
 
-                {/* คอร์ส + วันเวลา */}
-                <div>
-                  <p className="text-lg font-medium">{b.course.title}</p>
-                  <p className="text-gray-600 mt-1">
-                    {new Date(b.booking_date).toLocaleString("th-TH", {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    })}
-                  </p>
+                <div className="text-sm text-gray-600">
+                  <p>ชื่อคอร์ส: <span className="font-medium text-gray-700">{b.course.title}</span></p>
+                  <p>เริ่ม: {new Date(b.booking_date).toLocaleString("th-TH", {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  })}</p>
+                  <p>ราคา: {b.total_amount?.toFixed(0)} บาท</p>
                 </div>
 
-                {/* สถานะ */}
-                <span
-                  className={`inline-block mt-4 px-3 py-1 text-sm font-medium rounded-full ${
+                <div className="mt-2">
+                  <span className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${
                     b.status === "pending"
                       ? "bg-yellow-100 text-yellow-800"
                       : b.status === "confirmed"
                       ? "bg-green-100 text-green-800"
                       : "bg-red-100 text-red-800"
-                  }`}
-                >
-                  {b.status === "pending"
-                    ? "รอยืนยัน"
-                    : b.status === "confirmed"
-                    ? "ยืนยันแล้ว"
-                    : "ยกเลิกแล้ว"}
-                </span>
+                  }`}>
+                    {b.status === "pending"
+                      ? "รอยืนยัน"
+                      : b.status === "confirmed"
+                      ? "ยืนยันแล้ว"
+                      : "ยกเลิกแล้ว"}
+                  </span>
+                </div>
+
+                {b.status === "pending" && (
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      onClick={() => updateStatus(b.booking_id, "confirmed")}
+                      className="flex-1 bg-green-500 hover:bg-green-600 text-white text-sm py-1.5 rounded-md"
+                    >
+                      ✅ ยืนยัน
+                    </button>
+                    <button
+                      onClick={() => updateStatus(b.booking_id, "cancelled")}
+                      className="flex-1 bg-red-500 hover:bg-red-600 text-white text-sm py-1.5 rounded-md"
+                    >
+                      ❌ ปฏิเสธ
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>

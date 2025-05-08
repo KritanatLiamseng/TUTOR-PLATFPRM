@@ -1,4 +1,3 @@
-// src/app/tutor/courses/new/page.jsx  (หรือ wherever you put NewCoursePage)
 "use client";
 
 import { useEffect, useState } from "react";
@@ -35,33 +34,47 @@ export default function NewCoursePage() {
     fetch("/api/subjects")
       .then((r) => r.json())
       .then(setSubjects)
-      .catch(console.error);
+      .catch((e) => {
+        console.error("โหลดรายวิชาล้มเหลว:", e);
+        alert("เกิดข้อผิดพลาดในการโหลดวิชา");
+      });
   }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((f) => ({ ...f, [name]: value }));
+    setForm((f) => ({ ...f, [name]: value.trimStart() }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    if (loading) return;
 
     const tutorId = localStorage.getItem("userId");
+    if (!tutorId) {
+      alert("ไม่สามารถระบุผู้ใช้ได้ กรุณาเข้าสู่ระบบอีกครั้ง");
+      router.push("/login");
+      return;
+    }
+
+    setLoading(true);
+
+    const payload = {
+      ...form,
+      rate_per_hour: Number(form.rate_per_hour),
+    };
+
     const res = await fetch(`/api/tutor/${tutorId}/courses`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify(payload),
     });
 
     setLoading(false);
 
     if (res.ok) {
       alert("✅ สร้างคอร์สสำเร็จแล้ว");
-      router.push("/hometutor");     // ← กลับไปดู list คอร์สของติวเตอร์
+      router.push("/hometutor");
     } else {
-      // ถ้า res.json() เจอ EOF หรือไม่เป็น JSON มันจะ throw, 
-      // เรา catch แล้ว fallback
       let errMsg = "ไม่สามารถสร้างคอร์สได้";
       try {
         const err = await res.json();

@@ -49,7 +49,7 @@ export default function NewBookingPage() {
     }
 
     // เตรียมข้อมูล tutor_id และ rate_per_hour จาก course
-    const tutor_id    = course.tutor.user_id;         // ปรับตามโครงสร้าง API
+    const tutor_id    = course.tutor.tutor_id;         // ปรับตามโครงสร้าง API
     const ratePerHour = course.rate_per_hour;
 
     // รวมวันที่กับเวลาให้เป็น ISO string
@@ -70,6 +70,7 @@ export default function NewBookingPage() {
           tutor_id,
           course_id:    courseId,
           booking_date: startDateTime,
+          end_time: endDateTime,
           total_amount,
           // หาก API รองรับให้ใส่ด้วย:
           // end_time: endDateTime

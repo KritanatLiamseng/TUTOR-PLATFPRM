@@ -114,6 +114,7 @@ export default function BookingHistoryPage() {
                   onConfirm={() => mutateStatus(b.booking_id, "confirmed")}
                   onReject={() => mutateStatus(b.booking_id, "cancelled")}
                   actingOn={actingOn === b.booking_id}
+                  userRole={user.role}
                 />
               ))}
             </div>
@@ -132,6 +133,7 @@ export default function BookingHistoryPage() {
                   booking={b}
                   isTutorView={isTutor}
                   isCancelled
+                  userRole={user.role}
                 />
               ))}
             </div>
@@ -149,10 +151,12 @@ function BookingCard({
   onConfirm,
   onReject,
   actingOn,
+  userRole,
 }) {
+  const router = useRouter();
   const {
     booking_id,
-    course: { title, subject },
+    course,
     tutor: { user: tutorUser } = {},
     student,
     booking_date,
@@ -160,9 +164,11 @@ function BookingCard({
     status,
   } = booking;
 
+  const { title, subject } = course || {};
+
   const avatarSrc = isTutorView
-    ? student.profile_image
-    : tutorUser.profile_image;
+    ? student?.profile_image
+    : tutorUser?.profile_image;
 
   const statusText = isCancelled
     ? "ยกเลิกแล้ว"
@@ -184,16 +190,16 @@ function BookingCard({
           <div>
             <p className="font-medium">
               {isTutorView
-                ? `${student.name} ${student.surname}`
-                : `${tutorUser.name} ${tutorUser.surname}`}
+                ? `${student?.name || "-"} ${student?.surname || ""}`
+                : `${tutorUser?.name || "-"} ${tutorUser?.surname || ""}`}
             </p>
             <p className="text-sm text-gray-500">
-              วิชา: {status === "pending" ? course.subject : subject}
+              วิชา: {subject?.name || "-"}
             </p>
           </div>
         </div>
 
-        <h3 className="text-lg font-semibold">{title}</h3>
+        <h3 className="text-lg font-semibold">{title || "ไม่ระบุคอร์ส"}</h3>
         <p className="text-gray-600">
           {new Date(booking_date).toLocaleString("th-TH", {
             dateStyle: "medium",
@@ -230,6 +236,14 @@ function BookingCard({
             <span className="px-4 py-1 bg-yellow-100 text-yellow-800 rounded-full">
               {statusText}
             </span>
+            {status === "confirmed" && userRole !== "tutor" && (
+              <button
+                onClick={() => router.push(`/payment/${booking_id}`)}
+                className="px-4 py-1 text-sm bg-blue-100 text-blue-800 rounded hover:bg-blue-200"
+              >
+                💳 ไปชำระเงิน
+              </button>
+            )}
             <button
               onClick={onReject}
               disabled={actingOn}

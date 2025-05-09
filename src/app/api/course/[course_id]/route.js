@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 import prisma from "@/prisma/client";
 
 export async function GET(request, context) {
-  // 1) unwrap params promise
   const params = await context.params;
   const courseId = parseInt(params.course_id, 10);
   if (isNaN(courseId)) {
@@ -13,7 +12,6 @@ export async function GET(request, context) {
     );
   }
 
-  // 2) fetch course + subject + tutor.user
   const course = await prisma.tutorCourse.findUnique({
     where: { course_id: courseId },
     include: {
@@ -35,7 +33,6 @@ export async function GET(request, context) {
     );
   }
 
-  // 3) return JSON
   return NextResponse.json(
     {
       course_id:          course.course_id,
@@ -48,6 +45,7 @@ export async function GET(request, context) {
       level:              course.level,
       tutor: {
         tutor_id:      course.tutor.tutor_id,
+        user_id:       course.tutor.user_id,
         name:          course.tutor.user.name,
         surname:       course.tutor.user.surname,
         profile_image: course.tutor.user.profile_image,
@@ -58,7 +56,6 @@ export async function GET(request, context) {
 }
 
 export async function PUT(request, context) {
-  // 1) unwrap params promise
   const params = await context.params;
   const courseId = parseInt(params.course_id, 10);
   if (isNaN(courseId)) {
@@ -68,7 +65,6 @@ export async function PUT(request, context) {
     );
   }
 
-  // 2) parse body
   let body;
   try {
     body = await request.json();
@@ -94,7 +90,6 @@ export async function PUT(request, context) {
     );
   }
 
-  // 3) update
   try {
     const updated = await prisma.tutorCourse.update({
       where: { course_id: courseId },

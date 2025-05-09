@@ -1,11 +1,9 @@
-export const dynamic = "force-dynamic";
-
 import { NextResponse } from "next/server";
 import prisma from "@/prisma/client";
 
-// ✅ GET /api/bookings/:id
-export async function GET(request, context) {
-  const id = Number(context.params.id);
+// ✅ GET /api/bookings/[id]
+export async function GET(request, { params }) {
+  const id = Number(params.id);
   if (Number.isNaN(id)) {
     return NextResponse.json({ error: "ID ไม่ถูกต้อง" }, { status: 400 });
   }
@@ -60,9 +58,9 @@ export async function GET(request, context) {
   }
 }
 
-// ✅ PUT /api/bookings/:id
-export async function PUT(request, context) {
-  const id = Number(context.params.id);
+// ✅ PUT /api/bookings/[id]
+export async function PUT(request, { params }) {
+  const id = Number(params.id);
   if (Number.isNaN(id)) {
     return NextResponse.json({ error: "ID ไม่ถูกต้อง" }, { status: 400 });
   }
@@ -92,9 +90,9 @@ export async function PUT(request, context) {
   }
 }
 
-// ✅ DELETE /api/bookings/:id
-export async function DELETE(request, context) {
-  const id = Number(context.params.id);
+// ✅ DELETE /api/bookings/[id]
+export async function DELETE(request, { params }) {
+  const id = Number(params.id);
   if (Number.isNaN(id)) {
     return NextResponse.json({ error: "ID ไม่ถูกต้อง" }, { status: 400 });
   }

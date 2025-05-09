@@ -1,11 +1,13 @@
-// src/app/api/bookings/route.js
 import { NextResponse } from "next/server";
 import prisma from "@/prisma/client";
 
-export async function GET(request) {
-  const url     = new URL(request.url);
+export const dynamic = "force-dynamic";
+
+// ✅ GET /api/bookings?student_id=...&tutor_id=...
+export async function GET(request, { params }) {
+  const url = new URL(request.url);
   const student = url.searchParams.get("student_id");
-  const tutor   = url.searchParams.get("tutor_id");
+  const tutor = url.searchParams.get("tutor_id");
 
   if (!student && !tutor) {
     return NextResponse.json(
@@ -16,7 +18,7 @@ export async function GET(request) {
 
   const where = {};
   if (student) where.student_id = Number(student);
-  if (tutor)   where.tutor_id   = Number(tutor);
+  if (tutor) where.tutor_id = Number(tutor);
 
   try {
     const rows = await prisma.booking.findMany({
@@ -25,9 +27,9 @@ export async function GET(request) {
       include: {
         student: {
           select: {
-            user_id:       true,
-            name:          true,
-            surname:       true,
+            user_id: true,
+            name: true,
+            surname: true,
             profile_image: true,
           },
         },
@@ -37,7 +39,7 @@ export async function GET(request) {
             user: {
               select: {
                 user_id: true,
-                name:    true,
+                name: true,
                 surname: true,
               },
             },
@@ -45,9 +47,9 @@ export async function GET(request) {
         },
         course: {
           select: {
-            course_id:       true,
-            course_title:    true,
-            rate_per_hour:   true,
+            course_id: true,
+            course_title: true,
+            rate_per_hour: true,
             teaching_method: true,
             subject: {
               select: { name: true },
@@ -59,39 +61,63 @@ export async function GET(request) {
 
     return NextResponse.json(
       rows.map((b) => ({
-        booking_id:   b.booking_id,
+        booking_id: b.booking_id,
         booking_date: b.booking_date,
-        end_time:     b.end_time,
-        status:       b.status,
+        status: b.status,
         total_amount: b.total_amount,
-        student: {
-          user_id:       b.student.user_id,
-          name:          b.student.name,
-          surname:       b.student.surname,
-          profile_image: b.student.profile_image,
-        },
-        tutor: {
-          tutor_id: b.tutor.tutor_id,
-          user: {
-            user_id: b.tutor.user.user_id,
-            name:    b.tutor.user.name,
-            surname: b.tutor.user.surname,
-          },
-        },
+        student: b.student,
+        tutor: b.tutor,
         course: {
           course_id: b.course.course_id,
-          title:     b.course.course_title,
-          subject:   b.course.subject.name,
-          rate:      b.course.rate_per_hour,
-          method:    b.course.teaching_method,
+          title: b.course.course_title,
+          subject: b.course.subject?.name || "-",
+          rate: b.course.rate_per_hour,
+          method: b.course.teaching_method,
         },
       }))
     );
   } catch (err) {
     console.error("❌ GET /api/bookings failed:", err);
-    return NextResponse.json(
-      { error: "ไม่สามารถโหลดประวัติการจองได้" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "ไม่สามารถโหลดประวัติการจองได้" }, { status: 500 });
+  }
+}
+
+// ✅ POST /api/bookings
+export async function POST(request) {
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "ข้อมูล JSON ไม่ถูกต้อง" }, { status: 400 });
+  }
+
+  const {
+    student_id,
+    tutor_id,
+    course_id,
+    booking_date,
+    total_amount,
+  } = body;
+
+  if (!student_id || !tutor_id || !course_id || !booking_date || !total_amount) {
+    return NextResponse.json({ error: "ข้อมูลไม่ครบถ้วน" }, { status: 422 });
+  }
+
+  try {
+    const newBooking = await prisma.booking.create({
+      data: {
+        student_id: Number(student_id),
+        tutor_id: Number(tutor_id),
+        course_id: Number(course_id),
+        booking_date: new Date(booking_date),
+        total_amount: Number(total_amount),
+        status: "pending",
+      },
+    });
+
+    return NextResponse.json(newBooking);
+  } catch (err) {
+    console.error("❌ POST /api/bookings failed:", err);
+    return NextResponse.json({ error: "ไม่สามารถสร้างการจองได้" }, { status: 500 });
   }
 }

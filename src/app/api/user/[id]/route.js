@@ -1,5 +1,3 @@
-/* src/app/api/user/[id]/route.js */
-
 import prisma from "@/prisma/client";
 import { NextResponse } from "next/server";
 
@@ -11,11 +9,39 @@ export async function GET(request, context) {
     return NextResponse.json({ error: "ID ไม่ถูกต้อง" }, { status: 400 });
   }
   try {
-    const user = await prisma.user.findUnique({ where: { user_id: userId } });
+    const user = await prisma.user.findUnique({
+      where: { user_id: userId },
+      include: {
+        tutor: {
+          include: {
+            tutor_courses: {
+              include: {
+                subject: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
     if (!user) {
       return NextResponse.json({ error: "ไม่พบผู้ใช้" }, { status: 404 });
     }
-    return NextResponse.json(user);
+
+    const result = {
+      ...user,
+      courses:
+        user.tutor?.tutor_courses.map((c) => ({
+          course_id: c.course_id,
+          title: c.course_title,
+          rate: c.rate_per_hour,
+          level: c.level,
+          method: c.teaching_method,
+          subject_name: c.subject.name,
+        })) || [],
+    };
+
+    return NextResponse.json(result);
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "เกิดข้อผิดพลาด" }, { status: 500 });
@@ -37,14 +63,7 @@ export async function PUT(request, context) {
     return NextResponse.json({ error: "ข้อมูล JSON ไม่ถูกต้อง" }, { status: 400 });
   }
 
-  const {
-    profile_image,
-    name,
-    phone,
-    email,
-    username,
-    password,
-  } = body;
+  const { profile_image, name, phone, email, username, password } = body;
 
   try {
     const updateData = {};
@@ -53,7 +72,7 @@ export async function PUT(request, context) {
     if (phone !== undefined) updateData.phone = phone;
     if (email !== undefined) updateData.email = email;
     if (username !== undefined) updateData.username = username;
-    if (password) updateData.password = password; // hash ก่อนใช้จริง
+    if (password) updateData.password = password;
 
     const updatedUser = await prisma.user.update({
       where: { user_id: userId },

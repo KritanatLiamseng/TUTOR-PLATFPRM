@@ -1,8 +1,9 @@
-// File: src/app/api/bookings/[id]/route.js
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import prisma from "@/prisma/client";
 
-// GET /api/bookings/:id
+// ✅ GET /api/bookings/:id
 export async function GET(request, context) {
   const id = Number(context.params.id);
   if (Number.isNaN(id)) {
@@ -15,7 +16,13 @@ export async function GET(request, context) {
       include: {
         student: {
           select: {
-            user: { select: { name: true, surname: true, profile_image: true } },
+            user: {
+              select: {
+                name: true,
+                surname: true,
+                profile_image: true,
+              },
+            },
           },
         },
         course: {
@@ -26,7 +33,13 @@ export async function GET(request, context) {
             subject: { select: { name: true } },
             tutor: {
               select: {
-                user: { select: { name: true, surname: true, profile_image: true } },
+                user: {
+                  select: {
+                    name: true,
+                    surname: true,
+                    profile_image: true,
+                  },
+                },
               },
             },
           },
@@ -35,17 +48,19 @@ export async function GET(request, context) {
         chats: true,
       },
     });
+
     if (!booking) {
       return NextResponse.json({ error: "ไม่พบการจองนี้" }, { status: 404 });
     }
+
     return NextResponse.json(booking);
   } catch (err) {
-    console.error(err);
+    console.error("❌ GET booking failed:", err);
     return NextResponse.json({ error: "โหลดรายละเอียดไม่สำเร็จ" }, { status: 500 });
   }
 }
 
-// ✅ PUT /api/bookings/:id — อัปเดตสถานะเท่านั้น ปลอดภัย ไม่กระทบข้อมูลอื่น
+// ✅ PUT /api/bookings/:id
 export async function PUT(request, context) {
   const id = Number(context.params.id);
   if (Number.isNaN(id)) {
@@ -60,8 +75,8 @@ export async function PUT(request, context) {
   }
 
   const { status } = body;
-  const validStatus = ["pending", "confirmed", "cancelled"];
-  if (!validStatus.includes(status)) {
+  const allowed = ["pending", "confirmed", "cancelled"];
+  if (!allowed.includes(status)) {
     return NextResponse.json({ error: "สถานะไม่ถูกต้อง" }, { status: 422 });
   }
 
@@ -72,22 +87,23 @@ export async function PUT(request, context) {
     });
     return NextResponse.json(updated);
   } catch (err) {
-    console.error(err);
+    console.error("❌ PUT booking failed:", err);
     return NextResponse.json({ error: "อัปเดตไม่สำเร็จ" }, { status: 500 });
   }
 }
 
-// DELETE /api/bookings/:id
+// ✅ DELETE /api/bookings/:id
 export async function DELETE(request, context) {
   const id = Number(context.params.id);
   if (Number.isNaN(id)) {
     return NextResponse.json({ error: "ID ไม่ถูกต้อง" }, { status: 400 });
   }
+
   try {
     await prisma.booking.delete({ where: { booking_id: id } });
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error(err);
+    console.error("❌ DELETE booking failed:", err);
     return NextResponse.json({ error: "ลบการจองไม่สำเร็จ" }, { status: 500 });
   }
 }

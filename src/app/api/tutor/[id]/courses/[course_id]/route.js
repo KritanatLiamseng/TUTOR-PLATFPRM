@@ -2,9 +2,9 @@
 import { NextResponse } from "next/server";
 import prisma from "@/prisma/client";
 
-// GET /api/tutor/[id]/courses/[course_id]
-export async function GET(request, context) {
-  const { params } = context;
+// ✅ GET /api/tutor/[id]/courses/[course_id]
+export async function GET(request, contextPromise) {
+  const { params } = await contextPromise;
   const courseId = Number(params.course_id);
   if (Number.isNaN(courseId)) {
     return NextResponse.json({ error: "ID คอร์สไม่ถูกต้อง" }, { status: 400 });
@@ -21,6 +21,7 @@ export async function GET(request, context) {
       },
     },
   });
+
   if (!course) {
     return NextResponse.json({ error: "ไม่พบคอร์สนี้" }, { status: 404 });
   }
@@ -43,9 +44,9 @@ export async function GET(request, context) {
   });
 }
 
-// PUT /api/tutor/[id]/courses/[course_id]
-export async function PUT(request, context) {
-  const { params } = context;
+// ✅ PUT /api/tutor/[id]/courses/[course_id]
+export async function PUT(request, contextPromise) {
+  const { params } = await contextPromise;
   const courseId = Number(params.course_id);
   if (Number.isNaN(courseId)) {
     return NextResponse.json({ error: "ID คอร์สไม่ถูกต้อง" }, { status: 400 });
@@ -58,8 +59,8 @@ export async function PUT(request, context) {
     return NextResponse.json({ error: "JSON payload ไม่ถูกต้อง" }, { status: 400 });
   }
 
-  const subject_id       = Number(body.subject_id);
-  const rate_per_hour    = Number(body.rate_per_hour);
+  const subject_id = Number(body.subject_id);
+  const rate_per_hour = Number(body.rate_per_hour);
   const {
     course_title,
     course_description = "",
@@ -87,6 +88,7 @@ export async function PUT(request, context) {
         level,
       },
     });
+
     return NextResponse.json({
       course_id:    updated.course_id,
       subject_id:   updated.subject_id,
@@ -101,11 +103,12 @@ export async function PUT(request, context) {
   }
 }
 
-// DELETE /api/tutor/[id]/courses/[course_id]
-export async function DELETE(request, context) {
-  const { params } = context;
+// ✅ DELETE /api/tutor/[id]/courses/[course_id]
+export async function DELETE(request, contextPromise) {
+  const { params } = await contextPromise;
   const tutorUserId = Number(params.id);
-  const courseId    = Number(params.course_id);
+  const courseId = Number(params.course_id);
+
   if (Number.isNaN(tutorUserId) || Number.isNaN(courseId)) {
     return NextResponse.json({ error: "ID ไม่ถูกต้อง" }, { status: 400 });
   }

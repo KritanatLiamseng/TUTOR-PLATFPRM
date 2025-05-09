@@ -8,8 +8,12 @@ export default function EditTutorPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({
-    profile_image: null,        // File object
-    previewUrl: "",            // สำหรับ preview
+    profile_image: null,
+    previewUrl: "",
+    name: "",
+    phone: "",
+    email: "",
+    username: "",
     education_level: "",
     experience_years: "",
     available_time: "",
@@ -21,13 +25,17 @@ export default function EditTutorPage() {
     const userId = localStorage.getItem("userId");
     if (!userId) return;
 
-    fetch(`/api/user/${userId}`)
+    fetch(`/api/tutor/${userId}`)
       .then((res) => res.json())
       .then((user) => {
         setForm((f) => ({
           ...f,
           previewUrl: user.profile_image || "/default-profile.png",
-          education_level: user.education_level || "",
+          name: user.name || "",
+          phone: user.phone || "",
+          email: user.email || "",
+          username: user.username || "",
+          education_level: user.education_background || "",
           experience_years: user.experience_years || "",
           available_time: user.available_time || "",
           rate_per_hour: user.rate_per_hour || "",
@@ -61,10 +69,14 @@ export default function EditTutorPage() {
     const userId = localStorage.getItem("userId");
 
     const payload = new FormData();
-    // ถ้ามีไฟล์ภาพใหม่ให้ append
     if (form.profile_image) {
       payload.append("profile_image", form.profile_image);
     }
+
+    payload.append("name", form.name);
+    payload.append("phone", form.phone);
+    payload.append("email", form.email);
+    payload.append("username", form.username);
     payload.append("education_level", form.education_level);
     payload.append("experience_years", form.experience_years);
     payload.append("available_time", form.available_time);
@@ -101,11 +113,9 @@ export default function EditTutorPage() {
 
         <h1 className="text-xl font-bold mb-6">📝 แก้ไขโปรไฟล์ติวเตอร์</h1>
 
-        {/* 1) อัปโหลดรูป */}
+        {/* รูปโปรไฟล์ */}
         <div className="mb-4">
-          <label className="block mb-1 text-sm font-medium text-gray-600">
-            รูปโปรไฟล์
-          </label>
+          <label className="block mb-1 text-sm font-medium text-gray-600">รูปโปรไฟล์</label>
           <div className="flex items-center gap-4">
             <img
               src={form.previewUrl}
@@ -122,7 +132,13 @@ export default function EditTutorPage() {
           </div>
         </div>
 
-        {/* 2) ข้อมูลอื่น ๆ */}
+        {/* ข้อมูลผู้ใช้ */}
+        <FormInput label="ชื่อ" name="name" value={form.name} onChange={handleChange} />
+        <FormInput label="เบอร์โทร" name="phone" value={form.phone} onChange={handleChange} />
+        <FormInput label="อีเมล" name="email" value={form.email} onChange={handleChange} />
+        <FormInput label="ชื่อผู้ใช้" name="username" value={form.username} onChange={handleChange} />
+
+        {/* ข้อมูลติวเตอร์ */}
         <FormInput
           label="วุฒิการศึกษา"
           name="education_level"

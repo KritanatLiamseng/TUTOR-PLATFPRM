@@ -1,4 +1,4 @@
-// ✅ บอก Next.js ให้ใช้ dynamic execution mode เพื่อเลี่ยงบั๊ก
+// File: /api/tutor/[id]/courses/route.js
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
@@ -6,21 +6,22 @@ import prisma from "@/prisma/client";
 
 // ✅ GET /api/tutor/[id]/courses
 export async function GET(request, context) {
-  const tutorUserId = Number(context.params.id); // ✅ ใช้ context.params ตรง ๆ
+  const { params } = await context; // ✅ แก้ตรงนี้
+  const tutorUserId = Number(params.id);
 
   if (Number.isNaN(tutorUserId)) {
     return NextResponse.json({ error: "ID ติวเตอร์ไม่ถูกต้อง" }, { status: 400 });
   }
 
-  const tutor = await prisma.tutor.findUnique({
-    where: { user_id: tutorUserId },
-  });
-
-  if (!tutor) {
-    return NextResponse.json({ error: "ไม่พบโปรไฟล์ติวเตอร์" }, { status: 404 });
-  }
-
   try {
+    const tutor = await prisma.tutor.findUnique({
+      where: { user_id: tutorUserId },
+    });
+
+    if (!tutor) {
+      return NextResponse.json({ error: "ไม่พบโปรไฟล์ติวเตอร์" }, { status: 404 });
+    }
+
     const courses = await prisma.tutorCourse.findMany({
       where: { tutor_id: tutor.tutor_id },
       include: { subject: true },
@@ -47,42 +48,37 @@ export async function GET(request, context) {
 
 // ✅ POST /api/tutor/[id]/courses
 export async function POST(request, context) {
-  const tutorUserId = Number(context.params.id);
+  const { params } = await context; // ✅ แก้ตรงนี้
+  const tutorUserId = Number(params.id);
 
   if (Number.isNaN(tutorUserId)) {
     return NextResponse.json({ error: "ID ติวเตอร์ไม่ถูกต้อง" }, { status: 400 });
   }
 
-  const tutor = await prisma.tutor.findUnique({
-    where: { user_id: tutorUserId },
-  });
-
-  if (!tutor) {
-    return NextResponse.json({ error: "ไม่พบโปรไฟล์ติวเตอร์" }, { status: 404 });
-  }
-
-  let body;
   try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Payload ไม่เป็น JSON" }, { status: 400 });
-  }
+    const tutor = await prisma.tutor.findUnique({
+      where: { user_id: tutorUserId },
+    });
 
-  const subject_id = Number(body.subject_id);
-  const rate_per_hour = Number(body.rate_per_hour);
-  const { course_title, course_description, teaching_method, level } = body;
+    if (!tutor) {
+      return NextResponse.json({ error: "ไม่พบโปรไฟล์ติวเตอร์" }, { status: 404 });
+    }
 
-  if (
-    Number.isNaN(subject_id) ||
-    Number.isNaN(rate_per_hour) ||
-    typeof course_title !== "string" ||
-    typeof teaching_method !== "string" ||
-    typeof level !== "string"
-  ) {
-    return NextResponse.json({ error: "ข้อมูลในฟอร์มไม่ถูกต้อง" }, { status: 400 });
-  }
+    const body = await request.json();
+    const subject_id = Number(body.subject_id);
+    const rate_per_hour = Number(body.rate_per_hour);
+    const { course_title, course_description, teaching_method, level } = body;
 
-  try {
+    if (
+      Number.isNaN(subject_id) ||
+      Number.isNaN(rate_per_hour) ||
+      typeof course_title !== "string" ||
+      typeof teaching_method !== "string" ||
+      typeof level !== "string"
+    ) {
+      return NextResponse.json({ error: "ข้อมูลในฟอร์มไม่ถูกต้อง" }, { status: 400 });
+    }
+
     const created = await prisma.tutorCourse.create({
       data: {
         tutor_id: tutor.tutor_id,

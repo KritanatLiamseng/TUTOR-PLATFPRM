@@ -1,6 +1,4 @@
-// File: src/app/bookings/new/page.jsx
 "use client";
-
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { FaCalendarAlt, FaClock } from "react-icons/fa";
@@ -10,21 +8,17 @@ export default function NewBookingPage() {
   const params = useSearchParams();
   const courseId = Number(params.get("course"));
 
-  const [course, setCourse]     = useState(null);
+  const [course, setCourse] = useState(null);
   const [bookingDate, setBookingDate] = useState("");
-  const [startHour, setStartHour]     = useState("");
-  const [startMin, setStartMin]       = useState("");
-  const [endHour, setEndHour]         = useState("");
-  const [endMin, setEndMin]           = useState("");
-  const [loading, setLoading]         = useState(false);
+  const [startHour, setStartHour] = useState("");
+  const [startMin, setStartMin] = useState("");
+  const [endHour, setEndHour] = useState("");
+  const [endMin, setEndMin] = useState("");
+  const [loading, setLoading] = useState(false);
 
   // เตรียมตัวเลือก ชั่วโมง และ นาที
-  const hours = Array.from({ length: 24 }, (_, i) =>
-    String(i).padStart(2, "0")
-  );
-  const minutes = Array.from({ length: 12 }, (_, i) =>
-    String(i * 5).padStart(2, "0")
-  );
+  const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
+  const minutes = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, "0"));
 
   // โหลดข้อมูลคอร์ส + tutor
   useEffect(() => {
@@ -54,9 +48,17 @@ export default function NewBookingPage() {
       return router.push("/login");
     }
 
+    // เตรียมข้อมูล tutor_id และ rate_per_hour จาก course
+    const tutor_id    = course.tutor.user_id;         // ปรับตามโครงสร้าง API
+    const ratePerHour = course.rate_per_hour;
+
     // รวมวันที่กับเวลาให้เป็น ISO string
-    const startDateTime = `${bookingDate}T${startHour}:${startMin}`;
-    const endDateTime   = `${bookingDate}T${endHour}:${endMin}`;
+    const startDateTime = `${bookingDate}T${startHour}:${startMin}:00.000Z`;
+    const endDateTime   = `${bookingDate}T${endHour}:${endMin}:00.000Z`;
+
+    // คำนวณจำนวนชั่วโมง แล้วคูณราคาต่อชั่วโมง
+    const hoursDiff    = (new Date(endDateTime) - new Date(startDateTime)) / 3600000;
+    const total_amount = Number((hoursDiff * ratePerHour).toFixed(2));
 
     setLoading(true);
     try {
@@ -65,12 +67,18 @@ export default function NewBookingPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           student_id,
-          course_id:   courseId,
-          booking_date: startDateTime, // ถ้า API รองรับทั้ง start/end ให้เพิ่ม end_time: endDateTime
+          tutor_id,
+          course_id:    courseId,
+          booking_date: startDateTime,
+          total_amount,
+          // หาก API รองรับให้ใส่ด้วย:
           // end_time: endDateTime
         }),
       });
-      if (!res.ok) throw new Error((await res.json()).error || "Unknown");
+      if (!res.ok) {
+        const errJson = await res.json();
+        throw new Error(errJson.error || "Unknown error");
+      }
       alert("✅ จองสำเร็จ!");
       router.push("/booking-history");
     } catch (err) {
@@ -152,10 +160,10 @@ export default function NewBookingPage() {
                              focus:outline-none focus:ring-2 focus:ring-green-400"
                   required
                 >
-                  <option value="">-- เวลา --</option>
+                  <option value="">-- ชั่วโมง --</option>
                   {hours.map((h) => (
                     <option key={h} value={h}>
-                      {h}:00
+                      {h}
                     </option>
                   ))}
                 </select>
@@ -190,10 +198,10 @@ export default function NewBookingPage() {
                              focus:outline-none focus:ring-2 focus:ring-red-400"
                   required
                 >
-                  <option value="">-- เวลา --</option>
+                  <option value="">-- ชั่วโมง --</option>
                   {hours.map((h) => (
                     <option key={h} value={h}>
-                      {h}:00
+                      {h}
                     </option>
                   ))}
                 </select>

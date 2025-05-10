@@ -1,4 +1,5 @@
 "use client";
+
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { FaCalendarAlt, FaClock } from "react-icons/fa";
@@ -16,11 +17,9 @@ export default function NewBookingPage() {
   const [endMin, setEndMin] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // เตรียมตัวเลือก ชั่วโมง และ นาที
   const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
   const minutes = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, "0"));
 
-  // โหลดข้อมูลคอร์ส + tutor
   useEffect(() => {
     if (!courseId) return router.back();
     fetch(`/api/course/${courseId}`)
@@ -37,27 +36,29 @@ export default function NewBookingPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // ตรวจครบทุกฟิลด์
     if (!bookingDate || !startHour || !startMin || !endHour || !endMin) {
       alert("กรุณากรอกวันและเวลาให้ครบถ้วน");
       return;
     }
+
     const student_id = Number(localStorage.getItem("userId"));
     if (!student_id) {
       alert("กรุณาเข้าสู่ระบบก่อนจึงจองได้");
       return router.push("/login");
     }
 
-    // เตรียมข้อมูล tutor_id และ rate_per_hour จาก course
-    const tutor_id    = course.tutor.tutor_id;         // ปรับตามโครงสร้าง API
-    const ratePerHour = course.rate_per_hour;
+    const tutor_id = course?.tutor?.tutor_id;
+    const ratePerHour = course?.rate_per_hour || 0;
 
-    // รวมวันที่กับเวลาให้เป็น ISO string
-    const startDateTime = `${bookingDate}T${startHour}:${startMin}:00.000Z`;
-    const endDateTime   = `${bookingDate}T${endHour}:${endMin}:00.000Z`;
+    const startDateTime = `${bookingDate}T${startHour}:${startMin}:00`;
+    const endDateTime = `${bookingDate}T${endHour}:${endMin}:00`;
 
-    // คำนวณจำนวนชั่วโมง แล้วคูณราคาต่อชั่วโมง
-    const hoursDiff    = (new Date(endDateTime) - new Date(startDateTime)) / 3600000;
+    const hoursDiff = (new Date(endDateTime) - new Date(startDateTime)) / 3600000;
+    if (hoursDiff <= 0) {
+      alert("เวลาเลิกต้องหลังเวลาเริ่ม");
+      return;
+    }
+
     const total_amount = Number((hoursDiff * ratePerHour).toFixed(2));
 
     setLoading(true);
@@ -68,18 +69,16 @@ export default function NewBookingPage() {
         body: JSON.stringify({
           student_id,
           tutor_id,
-          course_id:    courseId,
+          course_id: courseId,
           booking_date: startDateTime,
           end_time: endDateTime,
           total_amount,
-          // หาก API รองรับให้ใส่ด้วย:
-          // end_time: endDateTime
         }),
       });
-      if (!res.ok) {
-        const errJson = await res.json();
-        throw new Error(errJson.error || "Unknown error");
-      }
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Unknown error");
+
       alert("✅ จองสำเร็จ!");
       router.push("/booking-history");
     } catch (err) {
@@ -100,7 +99,6 @@ export default function NewBookingPage() {
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-6">
       <div className="bg-white w-full max-w-2xl p-10 rounded-2xl shadow-xl space-y-8">
-        {/* --- ข้อมูลคอร์ส + ติวเตอร์ --- */}
         <div className="border-b pb-6">
           <h1 className="text-3xl font-bold mb-4">{course.course_title}</h1>
           <div className="flex items-center space-x-4 mb-4">
@@ -127,9 +125,7 @@ export default function NewBookingPage() {
           </p>
         </div>
 
-        {/* --- ฟอร์มเลือกวันและเวลา --- */}
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* เลือกวันที่ */}
           <div>
             <label className="flex items-center text-lg font-semibold text-gray-700 mb-2">
               <FaCalendarAlt className="text-blue-600 mr-2" />
@@ -139,15 +135,12 @@ export default function NewBookingPage() {
               type="date"
               value={bookingDate}
               onChange={(e) => setBookingDate(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-lg
-                         focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
               required
             />
           </div>
 
-          {/* เวลาเริ่ม / เวลาเลิก */}
           <div className="grid grid-cols-2 gap-6">
-            {/* เวลาเริ่ม */}
             <div>
               <label className="flex items-center text-lg font-semibold text-gray-700 mb-2">
                 <FaClock className="text-green-600 mr-2" />
@@ -157,35 +150,28 @@ export default function NewBookingPage() {
                 <select
                   value={startHour}
                   onChange={(e) => setStartHour(e.target.value)}
-                  className="flex-1 border border-gray-300 rounded-lg px-4 py-3
-                             focus:outline-none focus:ring-2 focus:ring-green-400"
+                  className="flex-1 border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-400"
                   required
                 >
                   <option value="">-- ชั่วโมง --</option>
                   {hours.map((h) => (
-                    <option key={h} value={h}>
-                      {h}
-                    </option>
+                    <option key={h} value={h}>{h}</option>
                   ))}
                 </select>
                 <select
                   value={startMin}
                   onChange={(e) => setStartMin(e.target.value)}
-                  className="flex-1 border border-gray-300 rounded-lg px-4 py-3
-                             focus:outline-none focus:ring-2 focus:ring-green-400"
+                  className="flex-1 border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-400"
                   required
                 >
                   <option value="">-- นาที --</option>
                   {minutes.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
+                    <option key={m} value={m}>{m}</option>
                   ))}
                 </select>
               </div>
             </div>
 
-            {/* เวลาเลิก */}
             <div>
               <label className="flex items-center text-lg font-semibold text-gray-700 mb-2">
                 <FaClock className="text-red-600 mr-2" />
@@ -195,42 +181,34 @@ export default function NewBookingPage() {
                 <select
                   value={endHour}
                   onChange={(e) => setEndHour(e.target.value)}
-                  className="flex-1 border border-gray-300 rounded-lg px-4 py-3
-                             focus:outline-none focus:ring-2 focus:ring-red-400"
+                  className="flex-1 border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-400"
                   required
                 >
                   <option value="">-- ชั่วโมง --</option>
                   {hours.map((h) => (
-                    <option key={h} value={h}>
-                      {h}
-                    </option>
+                    <option key={h} value={h}>{h}</option>
                   ))}
                 </select>
                 <select
                   value={endMin}
                   onChange={(e) => setEndMin(e.target.value)}
-                  className="flex-1 border border-gray-300 rounded-lg px-4 py-3
-                             focus:outline-none focus:ring-2 focus:ring-red-400"
+                  className="flex-1 border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-400"
                   required
                 >
                   <option value="">-- นาที --</option>
                   {minutes.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
+                    <option key={m} value={m}>{m}</option>
                   ))}
                 </select>
               </div>
             </div>
           </div>
 
-          {/* ปุ่มยืนยัน */}
           <div className="flex justify-end space-x-4 pt-4">
             <button
               type="button"
               onClick={() => router.back()}
-              className="px-6 py-3 border border-gray-300 rounded-lg
-                         hover:bg-gray-50 font-medium"
+              className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
             >
               ย้อนกลับ
             </button>
@@ -238,9 +216,7 @@ export default function NewBookingPage() {
               type="submit"
               disabled={loading}
               className={`px-8 py-3 rounded-lg text-white text-lg font-medium ${
-                loading
-                  ? "bg-blue-400 cursor-not-allowed"
-                  : "bg-blue-600 hover:bg-blue-700"
+                loading ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
               }`}
             >
               {loading ? "กำลังส่ง…" : "ยืนยันการจอง"}

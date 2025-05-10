@@ -82,11 +82,39 @@ model Booking {
   booking_date DateTime
   status       String
   tutor_id     Int
-  total_amount Float
+  total_amount  Decimal   @db.Decimal(10, 2) // ✅ เปลี่ยนจาก Float เป็น Decimal
+
+  start_time    DateTime? // ✅ เพิ่มใหม่
+  end_time      DateTime? // ✅ เพิ่มใหม่
 
   student User        @relation(fields: [student_id], references: [user_id])
   tutor   Tutor       @relation(fields: [tutor_id], references: [tutor_id])
   course  TutorCourse @relation(fields: [course_id], references: [course_id], onDelete: Cascade)
 
+   payments Payment[]
+  chats    Chat[]
+
   @@map("bookings")
+}
+
+model Payment {
+  payment_id   Int      @id @default(autoincrement())
+  booking_id   Int
+  amount       Decimal  @db.Decimal(10, 2)
+  payment_date DateTime
+   paid         Boolean  @default(false)
+  paid_at      DateTime?
+
+  booking Booking @relation(fields: [booking_id], references: [booking_id])
+  @@map("payments")
+}
+
+model Chat {
+  chat_id     Int      @id @default(autoincrement())
+  booking_id  Int
+  sender_id   Int
+  message     String
+  sent_at     DateTime
+
+  booking Booking @relation(fields: [booking_id], references: [booking_id])
 }

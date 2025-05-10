@@ -4,36 +4,59 @@ import Image from "next/image";
 import { FaUser } from "react-icons/fa";
 
 export default function BookingCard({
-    booking,
-    isCancelled = false,
-    isTutorView = false,
-    onConfirm,
-    onReject,
-    actingOn = false,
-  }) {
-    const {
-      booking_id,
-      tutor = {},
-      student,
-      booking_date,
-      total_amount,
-      status,
-    } = booking;
-  
-    const course = booking.course || {};
-    const courseTitle = course.title || course.course_title || "ไม่ระบุ";
-    const courseSubject = course.subject?.name || course.subject || "-";
-  
-    const profile = isTutorView ? student : tutor?.user;
-    const avatarSrc = profile?.profile_image || "/default-profile.png";
-    const profileName = `${profile?.name || "ไม่ระบุ"} ${profile?.surname || ""}`;
+  booking,
+  isCancelled = false,
+  isTutorView = false,
+  onConfirm,
+  onReject,
+  actingOn = false,
+}) {
+  const {
+    booking_id,
+    tutor = {},
+    student = {},
+    booking_date,
+    total_amount = 0,
+    status,
+  } = booking;
+
+  const course = booking.course || {};
+  const courseTitle = course?.title || course?.course_title || "ไม่ระบุ";
+  const courseSubject = course?.subject?.name || course?.subject || "-";
+
+  // ป้องกันกรณี tutor.user ไม่มีข้อมูล
+  const profile = isTutorView
+    ? student
+    : tutor?.user ?? {
+        name: tutor?.name || "-",
+        surname: tutor?.surname || "",
+        profile_image: tutor?.profile_image || "/default-profile.png",
+      };
+
+  const avatarSrc = profile?.profile_image || "/default-profile.png";
+  const profileName = `${profile?.name || "ไม่ระบุ"} ${profile?.surname || ""}`;
+
+  const statusText = isCancelled
+    ? "ยกเลิกแล้ว"
+    : status === "confirmed"
+    ? "ยืนยันแล้ว รอชำระเงิน"
+    : "รอยืนยัน";
 
   return (
     <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col justify-between">
       <div className="space-y-3">
         <div className="flex items-center space-x-3 mb-2">
           <div className="w-10 h-10 relative rounded-full overflow-hidden">
-            <Image src={avatarSrc} fill className="object-cover" alt={profileName} />
+            {avatarSrc ? (
+              <Image
+                src={avatarSrc}
+                fill
+                className="object-cover"
+                alt={profileName}
+              />
+            ) : (
+              <FaUser size={40} className="text-gray-300" />
+            )}
           </div>
           <div>
             <p className="font-medium">{profileName}</p>

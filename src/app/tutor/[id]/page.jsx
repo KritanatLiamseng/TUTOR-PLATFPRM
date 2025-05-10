@@ -82,11 +82,7 @@ export default async function TutorDetailPage({ params }) {
         <div className="mt-10 bg-white rounded-xl shadow p-8">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-semibold">คอร์สที่เปิดสอน</h2>
-            <Link href={`/tutor/${tutorId}/courses/new`}>
-              <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                + เพิ่มคอร์สใหม่
-              </button>
-            </Link>
+           
           </div>
 
           {courses.length > 0 ? (

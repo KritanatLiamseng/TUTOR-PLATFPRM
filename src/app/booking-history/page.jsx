@@ -4,11 +4,7 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/app/components/header";
-import {
-  FaCalendarAlt,
-  FaMoneyBillAlt,
-  FaUser,
-} from "react-icons/fa";
+import { FaUser } from "react-icons/fa";
 
 export default function BookingHistoryPage() {
   const router = useRouter();
@@ -19,16 +15,11 @@ export default function BookingHistoryPage() {
 
   useEffect(() => {
     const uid = localStorage.getItem("userId");
-    const role = localStorage.getItem("role");
     if (!uid) return router.push("/login");
 
     Promise.all([
       fetch(`/api/user/${uid}`).then((r) => r.json()),
-      fetch(
-        role === "tutor"
-          ? `/api/bookings?tutor_id=${uid}`
-          : `/api/bookings?student_id=${uid}`
-      ).then((r) => r.json()),
+      fetch(`/api/bookings?user_id=${uid}`).then((r) => r.json()),
     ])
       .then(([u, b]) => {
         if (u.error) throw new Error(u.error);
@@ -56,9 +47,7 @@ export default function BookingHistoryPage() {
         throw new Error(err.error || "failed");
       }
       setBookings((bs) =>
-        bs.map((b) =>
-          b.booking_id === bookingId ? { ...b, status: newStatus } : b
-        )
+        bs.map((b) => (b.booking_id === bookingId ? { ...b, status: newStatus } : b))
       );
     } catch (e) {
       alert("❌ " + e.message);
@@ -81,19 +70,24 @@ export default function BookingHistoryPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header dropdownItems={[
-        { label: "การจอง", path: "/booking-history" },
-        { label: "นโยบาย", path: "/policy" },
-        { label: "ศูนย์ช่วยเหลือ", path: "/support" },
-        { label: "รายงาน", path: "/report" },
-        {
-          label: "ออกจากระบบ",
-          onClick: () => {
-            localStorage.removeItem("userId");
-            router.push("/login");
+      <Header
+        dropdownItems={[
+          { label: "หน้าหลัก", path: "/" },
+          { label: "การจอง", path: "/booking-history" },
+          { label: "นโยบาย", path: "/policy" },
+          { label: "ศูนย์ช่วยเหลือ", path: "/support" },
+          { label: "รายงาน", path: "/report" },
+          {
+            label: "ออกจากระบบ",
+            onClick: () => {
+              localStorage.removeItem("userId");
+              localStorage.removeItem("role");
+              router.push("/login");
+            },
           },
-        },
-      ]} user={user} />
+        ]}
+        user={user}
+      />
 
       <main className="max-w-7xl mx-auto px-6 py-12">
         <h1 className="text-4xl font-bold text-center mb-8">ประวัติการจอง</h1>
@@ -156,7 +150,7 @@ function BookingCard({
   const router = useRouter();
   const {
     booking_id,
-    course,
+    course = {},
     tutor: { user: tutorUser } = {},
     student,
     booking_date,
@@ -164,11 +158,11 @@ function BookingCard({
     status,
   } = booking;
 
-  const { title, subject } = course || {};
-
-  const avatarSrc = isTutorView
-    ? student?.profile_image
-    : tutorUser?.profile_image;
+  const title = course.title || course.course_title || "ไม่ระบุคอร์ส";
+  const subject = course.subject?.name || course.subject || "-";
+  const profile = isTutorView ? student : tutorUser;
+  const avatarSrc = profile?.profile_image || "/default-profile.png";
+  const profileName = `${profile?.name || "-"} ${profile?.surname || ""}`;
 
   const statusText = isCancelled
     ? "ยกเลิกแล้ว"
@@ -180,26 +174,16 @@ function BookingCard({
     <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col justify-between">
       <div className="space-y-3">
         <div className="flex items-center space-x-3 mb-2">
-          {avatarSrc ? (
-            <div className="w-10 h-10 relative rounded-full overflow-hidden">
-              <Image src={avatarSrc} fill className="object-cover" alt="" />
-            </div>
-          ) : (
-            <FaUser size={40} className="text-gray-300" />
-          )}
+          <div className="w-10 h-10 relative rounded-full overflow-hidden">
+            <Image src={avatarSrc} fill className="object-cover" alt={profileName} />
+          </div>
           <div>
-            <p className="font-medium">
-              {isTutorView
-                ? `${student?.name || "-"} ${student?.surname || ""}`
-                : `${tutorUser?.name || "-"} ${tutorUser?.surname || ""}`}
-            </p>
-            <p className="text-sm text-gray-500">
-              วิชา: {subject?.name || "-"}
-            </p>
+            <p className="font-medium">{profileName}</p>
+            <p className="text-sm text-gray-500">วิชา: {subject}</p>
           </div>
         </div>
 
-        <h3 className="text-lg font-semibold">{title || "ไม่ระบุคอร์ส"}</h3>
+        <h3 className="text-lg font-semibold">{title}</h3>
         <p className="text-gray-600">
           {new Date(booking_date).toLocaleString("th-TH", {
             dateStyle: "medium",
@@ -211,9 +195,7 @@ function BookingCard({
 
       <div className="mt-6 flex items-center justify-end space-x-2">
         {isCancelled ? (
-          <span className="px-4 py-1 bg-red-100 text-red-800 rounded-full">
-            ยกเลิกแล้ว
-          </span>
+          <span className="px-4 py-1 bg-red-100 text-red-800 rounded-full">ยกเลิกแล้ว</span>
         ) : isTutorView ? (
           <>
             <button
@@ -233,9 +215,7 @@ function BookingCard({
           </>
         ) : (
           <>
-            <span className="px-4 py-1 bg-yellow-100 text-yellow-800 rounded-full">
-              {statusText}
-            </span>
+            <span className="px-4 py-1 bg-yellow-100 text-yellow-800 rounded-full">{statusText}</span>
             {status === "confirmed" && userRole !== "tutor" && (
               <button
                 onClick={() => router.push(`/payment/${booking_id}`)}

@@ -1,12 +1,11 @@
-// File: /api/tutor/[id]/courses/route.js
-export const dynamic = "force-dynamic";
-
 import { NextResponse } from "next/server";
 import prisma from "@/prisma/client";
 
+export const dynamic = "force-dynamic";
+
 // ✅ GET /api/tutor/[id]/courses
-export async function GET(request, context) {
-  const { params } = await context; // ✅ แก้ตรงนี้
+export async function GET(_request, contextPromise) {
+  const { params } = await contextPromise;
   const tutorUserId = Number(params.id);
 
   if (Number.isNaN(tutorUserId)) {
@@ -47,8 +46,8 @@ export async function GET(request, context) {
 }
 
 // ✅ POST /api/tutor/[id]/courses
-export async function POST(request, context) {
-  const { params } = await context; // ✅ แก้ตรงนี้
+export async function POST(request, contextPromise) {
+  const { params } = await contextPromise;
   const tutorUserId = Number(params.id);
 
   if (Number.isNaN(tutorUserId)) {

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import Header from "@/app/components/header";
 import { FaUser } from "react-icons/fa";
 
-export default function BookingHistoryPage() {
+export default function BookingHistoryTutorPage() {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [bookings, setBookings] = useState([]);
@@ -15,12 +15,11 @@ export default function BookingHistoryPage() {
 
   useEffect(() => {
     const uid = localStorage.getItem("userId");
-    const role = localStorage.getItem("role");
     if (!uid) return router.push("/login");
 
     Promise.all([
       fetch(`/api/user/${uid}`).then((r) => r.json()),
-      fetch(role === "tutor" ? `/api/bookings?tutor_id=${uid}` : `/api/bookings?student_id=${uid}`).then((r) => r.json()),
+      fetch(`/api/bookings?user_id=${uid}`).then((r) => r.json()),
     ])
       .then(([u, b]) => {
         if (u.error) throw new Error(u.error);
@@ -65,7 +64,6 @@ export default function BookingHistoryPage() {
     );
   }
 
-  const isTutor = user.role === "tutor";
   const active = bookings.filter((b) => b.status !== "cancelled");
   const cancelled = bookings.filter((b) => b.status === "cancelled");
 
@@ -74,7 +72,7 @@ export default function BookingHistoryPage() {
       <Header
         dropdownItems={[
           { label: "หน้าหลัก", path: "/" },
-          { label: "การจอง", path: "/booking-history" },
+          { label: "การจอง", path: "/booking-historytutor" },
           { label: "นโยบาย", path: "/policy" },
           { label: "ศูนย์ช่วยเหลือ", path: "/support" },
           { label: "รายงาน", path: "/report" },
@@ -91,12 +89,10 @@ export default function BookingHistoryPage() {
       />
 
       <main className="max-w-7xl mx-auto px-6 py-12">
-        <h1 className="text-4xl font-bold text-center mb-8">ประวัติการจอง</h1>
+        <h1 className="text-4xl font-bold text-center mb-8">ประวัติการจอง (ติวเตอร์)</h1>
 
         <section className="mb-12">
-          <h2 className="text-2xl font-semibold mb-4">
-            {isTutor ? "การจองจากนักเรียน" : "การจองปัจจุบัน"}
-          </h2>
+          <h2 className="text-2xl font-semibold mb-4">การจองที่ยังไม่ถูกยกเลิก</h2>
           {active.length === 0 ? (
             <p className="text-gray-500">ยังไม่มีรายการ</p>
           ) : (
@@ -105,7 +101,7 @@ export default function BookingHistoryPage() {
                 <BookingCard
                   key={b.booking_id}
                   booking={b}
-                  isTutorView={isTutor}
+                  isTutorView={true}
                   onConfirm={() => mutateStatus(b.booking_id, "confirmed")}
                   onReject={() => mutateStatus(b.booking_id, "cancelled")}
                   actingOn={actingOn === b.booking_id}
@@ -117,15 +113,13 @@ export default function BookingHistoryPage() {
 
         {cancelled.length > 0 && (
           <section>
-            <h2 className="text-2xl font-semibold mb-4 text-red-600">
-              การจองที่ยกเลิกแล้ว
-            </h2>
+            <h2 className="text-2xl font-semibold mb-4 text-red-600">การจองที่ยกเลิกแล้ว</h2>
             <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
               {cancelled.map((b) => (
                 <BookingCard
                   key={b.booking_id}
                   booking={b}
-                  isTutorView={isTutor}
+                  isTutorView={true}
                   isCancelled
                 />
               ))}
@@ -137,7 +131,7 @@ export default function BookingHistoryPage() {
   );
 }
 
-function BookingCard({ booking, isCancelled, isTutorView, onConfirm, onReject, actingOn }) {
+function BookingCard({ booking, isTutorView, isCancelled, onConfirm, onReject, actingOn }) {
   const {
     booking_id,
     course = {},
@@ -151,7 +145,14 @@ function BookingCard({ booking, isCancelled, isTutorView, onConfirm, onReject, a
   const title = course.title || course.course_title || "ไม่ระบุ";
   const subject = course.subject?.name || course.subject || "-";
 
-  const profile = isTutorView ? student : tutor.user;
+  const profile = isTutorView
+    ? student
+    : tutor?.user || {
+        name: tutor.name || "-",
+        surname: tutor.surname || "",
+        profile_image: tutor.profile_image || "/default-profile.png",
+      };
+
   const avatarSrc = profile?.profile_image || "/default-profile.png";
   const profileName = `${profile?.name || "-"} ${profile?.surname || ""}`;
 
@@ -186,10 +187,8 @@ function BookingCard({ booking, isCancelled, isTutorView, onConfirm, onReject, a
 
       <div className="mt-6 flex items-center justify-end space-x-2">
         {isCancelled ? (
-          <span className="px-4 py-1 bg-red-100 text-red-800 rounded-full">
-            ยกเลิกแล้ว
-          </span>
-        ) : isTutorView ? (
+          <span className="px-4 py-1 bg-red-100 text-red-800 rounded-full">ยกเลิกแล้ว</span>
+        ) : (
           <>
             <button
               onClick={onConfirm}
@@ -206,10 +205,6 @@ function BookingCard({ booking, isCancelled, isTutorView, onConfirm, onReject, a
               {actingOn ? "กำลัง..." : "❌ ปฏิเสธ"}
             </button>
           </>
-        ) : (
-          <span className="px-4 py-1 bg-yellow-100 text-yellow-800 rounded-full">
-            {statusText}
-          </span>
         )}
       </div>
     </div>

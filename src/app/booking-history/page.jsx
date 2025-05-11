@@ -1,10 +1,10 @@
+// src/app/booking-history/page.jsx
 "use client";
 
 import Image from "next/image";
-import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import Header from "@/app/components/header";
-import { FaUser } from "react-icons/fa";
 
 export default function BookingHistoryPage() {
   const router = useRouter();
@@ -34,21 +34,48 @@ export default function BookingHistoryPage() {
       .finally(() => setLoading(false));
   }, [router]);
 
+  // cancel or tutor‐confirm
   const mutateStatus = async (bookingId, newStatus) => {
     setActingOn(bookingId);
     try {
       const res = await fetch(`/api/bookings/${bookingId}`, {
         method: newStatus === "cancelled" ? "DELETE" : "PUT",
-        headers: newStatus === "cancelled" ? {} : { "Content-Type": "application/json" },
-        body: newStatus === "cancelled" ? undefined : JSON.stringify({ status: newStatus }),
+        headers:
+          newStatus === "cancelled"
+            ? {}
+            : { "Content-Type": "application/json" },
+        body:
+          newStatus === "cancelled"
+            ? undefined
+            : JSON.stringify({ status: newStatus }),
       });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "failed");
-      }
+      if (!res.ok) throw new Error((await res.json()).error || "failed");
       setBookings((bs) =>
-        bs.map((b) => (b.booking_id === bookingId ? { ...b, status: newStatus } : b))
+        bs.map((b) =>
+          b.booking_id === bookingId ? { ...b, status: newStatus } : b
+        )
       );
+    } catch (e) {
+      alert("❌ " + e.message);
+    } finally {
+      setActingOn(null);
+    }
+  };
+
+  // student marks “complete”
+  const handleComplete = async (bookingId) => {
+    setActingOn(bookingId);
+    try {
+      const res = await fetch(`/api/bookings/${bookingId}/complete`, {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error((await res.json()).error || "failed");
+      setBookings((bs) =>
+        bs.map((b) =>
+          b.booking_id === bookingId ? { ...b, status: "completed" } : b
+        )
+      );
+      alert("✅ เรียนเสร็จแล้ว");
     } catch (e) {
       alert("❌ " + e.message);
     } finally {
@@ -74,16 +101,10 @@ export default function BookingHistoryPage() {
         dropdownItems={[
           { label: "หน้าหลัก", path: "/" },
           { label: "การจอง", path: "/booking-history" },
-          { label: "นโยบาย", path: "/policy" },
-          { label: "ศูนย์ช่วยเหลือ", path: "/support" },
-          { label: "รายงาน", path: "/report" },
-          {
-            label: "ออกจากระบบ",
-            onClick: () => {
-              localStorage.removeItem("userId");
-              localStorage.removeItem("role");
+          { label: "ออกจากระบบ", onClick: () => {
+              localStorage.clear();
               router.push("/login");
-            },
+            } 
           },
         ]}
         user={user}
@@ -107,6 +128,7 @@ export default function BookingHistoryPage() {
                   isTutorView={isTutor}
                   onConfirm={() => mutateStatus(b.booking_id, "confirmed")}
                   onReject={() => mutateStatus(b.booking_id, "cancelled")}
+                  onComplete={() => handleComplete(b.booking_id)}
                   actingOn={actingOn === b.booking_id}
                   userRole={user.role}
                 />
@@ -144,6 +166,7 @@ function BookingCard({
   isTutorView,
   onConfirm,
   onReject,
+  onComplete,
   actingOn,
   userRole,
 }) {
@@ -156,33 +179,51 @@ function BookingCard({
     booking_date,
     total_amount,
     status,
+    payments = [],
   } = booking;
 
-  const title = course.title || course.course_title || "ไม่ระบุคอร์ส";
-  const subject = course.subject?.name || course.subject || "-";
-  const profile = isTutorView ? student : tutorUser;
-  const avatarSrc = profile?.profile_image || "/default-profile.png";
-  const profileName = `${profile?.name || "-"} ${profile?.surname || ""}`;
+  const hasPaid = payments.some((p) => p.paid);
 
-  const statusText = isCancelled
-    ? "ยกเลิกแล้ว"
-    : status === "confirmed"
-    ? "ยืนยันแล้ว รอชำระเงิน"
-    : "รอยืนยัน";
+  const title = course.course_title || course.title || "ไม่ระบุคอร์ส";
+  const subject = course.subject?.name || "-";
+  const profile = isTutorView ? student : tutorUser;
+  const profileName = `${profile?.name || "-"} ${profile?.surname || ""}`;
+  const avatarSrc = profile?.profile_image || "/default-profile.png";
+
+  let statusText = "";
+  let statusColor = "";
+
+  switch (status) {
+    case "cancelled":
+      statusText = "ยกเลิกแล้ว"; statusColor = "bg-red-100 text-red-800"; break;
+    case "completed":
+      statusText = "เรียนเสร็จ รอโอนเงิน"; statusColor = "bg-blue-100 text-blue-800"; break;
+    case "settled":
+      statusText = "โอนเงินแล้ว"; statusColor = "bg-green-100 text-green-800"; break;
+    case "confirmed":
+      statusText = hasPaid
+        ? "ชำระเงินแล้ว"
+        : "ยืนยันแล้ว รอชำระเงิน";
+      statusColor = hasPaid
+        ? "bg-blue-100 text-blue-800"
+        : "bg-yellow-100 text-yellow-800";
+      break;
+    default:
+      statusText = "รอยืนยัน"; statusColor = "bg-gray-100 text-gray-800";
+  }
 
   return (
     <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col justify-between">
       <div className="space-y-3">
         <div className="flex items-center space-x-3 mb-2">
           <div className="w-10 h-10 relative rounded-full overflow-hidden">
-            <Image src={avatarSrc} fill className="object-cover" alt={profileName} />
+            <Image src={avatarSrc} fill className="object-cover" alt={profileName}/>
           </div>
           <div>
             <p className="font-medium">{profileName}</p>
             <p className="text-sm text-gray-500">วิชา: {subject}</p>
           </div>
         </div>
-
         <h3 className="text-lg font-semibold">{title}</h3>
         <p className="text-gray-600">
           {new Date(booking_date).toLocaleString("th-TH", {
@@ -193,10 +234,40 @@ function BookingCard({
         <p className="text-gray-600">{total_amount} ฿</p>
       </div>
 
-      <div className="mt-6 flex items-center justify-end space-x-2">
-        {isCancelled ? (
-          <span className="px-4 py-1 bg-red-100 text-red-800 rounded-full">ยกเลิกแล้ว</span>
-        ) : isTutorView ? (
+      <div className="mt-6 flex flex-wrap items-center justify-end gap-2">
+        <span className={`px-4 py-1 rounded-full text-sm font-medium ${statusColor}`}>
+          {statusText}
+        </span>
+
+        {/* STUDENT: show pay button if confirmed & not paid */}
+        {!isTutorView &&
+          status === "confirmed" &&
+          userRole === "student" &&
+          !hasPaid && (
+            <button
+              onClick={() => router.push(`/payment/${booking_id}`)}
+              className="px-4 py-1 text-sm bg-blue-100 text-blue-800 rounded hover:bg-blue-200"
+            >
+              💳 ไปชำระเงิน
+            </button>
+        )}
+
+        {/* STUDENT: show “complete” if confirmed & already paid */}
+        {!isTutorView &&
+          status === "confirmed" &&
+          userRole === "student" &&
+          hasPaid && (
+            <button
+              onClick={onComplete}
+              disabled={actingOn}
+              className="px-4 py-1 text-sm bg-green-100 text-green-800 rounded hover:bg-green-200 disabled:opacity-50"
+            >
+              {actingOn ? "กำลัง..." : "✅ เรียนเสร็จแล้ว"}
+            </button>
+        )}
+
+        {/* TUTOR: confirm / reject */}
+        {isTutorView && status === "pending" && !isCancelled && (
           <>
             <button
               onClick={onConfirm}
@@ -211,25 +282,6 @@ function BookingCard({
               className="px-4 py-1 text-sm bg-red-100 text-red-800 rounded hover:bg-red-200 disabled:opacity-50"
             >
               {actingOn ? "กำลัง..." : "❌ ปฏิเสธ"}
-            </button>
-          </>
-        ) : (
-          <>
-            <span className="px-4 py-1 bg-yellow-100 text-yellow-800 rounded-full">{statusText}</span>
-            {status === "confirmed" && userRole !== "tutor" && (
-              <button
-                onClick={() => router.push(`/payment/${booking_id}`)}
-                className="px-4 py-1 text-sm bg-blue-100 text-blue-800 rounded hover:bg-blue-200"
-              >
-                💳 ไปชำระเงิน
-              </button>
-            )}
-            <button
-              onClick={onReject}
-              disabled={actingOn}
-              className="px-4 py-1 text-sm font-medium text-red-600 border border-red-600 rounded hover:bg-red-50 disabled:opacity-50"
-            >
-              {actingOn ? "กำลังยกเลิก..." : "ยกเลิก"}
             </button>
           </>
         )}

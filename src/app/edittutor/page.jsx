@@ -10,6 +10,7 @@ export default function EditTutorPage() {
   const [form, setForm] = useState({
     profile_image: null,
     previewUrl: "",
+    verification_documents: null,
     name: "",
     phone: "",
     email: "",
@@ -58,6 +59,9 @@ export default function EditTutorPage() {
         profile_image: file,
         previewUrl: URL.createObjectURL(file),
       }));
+    } else if (name === "verification_documents" && files.length > 0) {
+      const file = files[0];
+      setForm((f) => ({ ...f, verification_documents: file }));
     } else {
       setForm((f) => ({ ...f, [name]: value }));
     }
@@ -71,6 +75,9 @@ export default function EditTutorPage() {
     const payload = new FormData();
     if (form.profile_image) {
       payload.append("profile_image", form.profile_image);
+    }
+    if (form.verification_documents) {
+      payload.append("verification_documents", form.verification_documents);
     }
 
     payload.append("name", form.name);
@@ -132,6 +139,20 @@ export default function EditTutorPage() {
           </div>
         </div>
 
+        {/* เอกสารยืนยันตัวตน */}
+        <div className="mb-4">
+          <label className="block mb-1 text-sm font-medium text-gray-600">
+            เอกสารยืนยันตัวตน (เช่น PDF หรือรูปบัตร)
+          </label>
+          <input
+            type="file"
+            name="verification_documents"
+            accept="image/*,.pdf"
+            onChange={handleChange}
+            className="text-sm"
+          />
+        </div>
+
         {/* ข้อมูลผู้ใช้ */}
         <FormInput label="ชื่อ" name="name" value={form.name} onChange={handleChange} />
         <FormInput label="เบอร์โทร" name="phone" value={form.phone} onChange={handleChange} />
@@ -165,12 +186,7 @@ export default function EditTutorPage() {
           value={form.rate_per_hour}
           onChange={handleChange}
         />
-        <FormTextarea
-          label="Bio"
-          name="bio"
-          value={form.bio}
-          onChange={handleChange}
-        />
+        <FormTextarea label="Bio" name="bio" value={form.bio} onChange={handleChange} />
 
         <button
           onClick={handleSave}

@@ -4,7 +4,6 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/app/components/header";
-import { FaUser } from "react-icons/fa";
 
 export default function BookingHistoryTutorPage() {
   const router = useRouter();
@@ -15,11 +14,14 @@ export default function BookingHistoryTutorPage() {
 
   useEffect(() => {
     const uid = localStorage.getItem("userId");
-    if (!uid) return router.push("/login");
+    if (!uid) {
+      router.push("/login");
+      return;
+    }
 
     Promise.all([
       fetch(`/api/user/${uid}`).then((r) => r.json()),
-      fetch(`/api/bookings?user_id=${uid}`).then((r) => r.json()),
+      fetch(`/api/tutor-actions/bookings?user_id=${uid}`).then((r) => r.json()),
     ])
       .then(([u, b]) => {
         if (u.error) throw new Error(u.error);
@@ -34,21 +36,40 @@ export default function BookingHistoryTutorPage() {
       .finally(() => setLoading(false));
   }, [router]);
 
-  const mutateStatus = async (bookingId, newStatus) => {
+  const handleConfirm = async (bookingId) => {
     setActingOn(bookingId);
     try {
-      const res = await fetch(`/api/bookings/${bookingId}`, {
-        method: newStatus === "cancelled" ? "DELETE" : "PUT",
-        headers: newStatus === "cancelled" ? {} : { "Content-Type": "application/json" },
-        body: newStatus === "cancelled" ? undefined : JSON.stringify({ status: newStatus }),
+      const res = await fetch(`/api/bookings/${bookingId}/confirm`, {
+        method: "POST",
       });
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error || "failed");
+        throw new Error(err.error || "เกิดข้อผิดพลาด");
       }
-      setBookings((bs) =>
-        bs.map((b) => (b.booking_id === bookingId ? { ...b, status: newStatus } : b))
+      const { booking: updated } = await res.json();
+      setBookings((prev) =>
+        prev.map((b) => (b.booking_id === bookingId ? updated : b))
       );
+      alert("✅ ยืนยันการจองสำเร็จ");
+    } catch (e) {
+      alert("❌ " + e.message);
+    } finally {
+      setActingOn(null);
+    }
+  };
+
+  const handleReject = async (bookingId) => {
+    setActingOn(bookingId);
+    try {
+      const res = await fetch(`/api/bookings/${bookingId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "เกิดข้อผิดพลาด");
+      }
+      setBookings((prev) => prev.filter((b) => b.booking_id !== bookingId));
+      alert("❌ ปฏิเสธการจองเรียบร้อย");
     } catch (e) {
       alert("❌ " + e.message);
     } finally {
@@ -70,9 +91,9 @@ export default function BookingHistoryTutorPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header
-        dropdownItems={[
-          { label: "หน้าหลัก", path: "/" },
-          { label: "การจอง", path: "/booking-historytutor" },
+        dropdownItems={[ 
+          { label: "หน้าหลัก", path: "/hometutor" },
+          { label: "การจอง", path: "/booking-history-tutor" },
           { label: "นโยบาย", path: "/policy" },
           { label: "ศูนย์ช่วยเหลือ", path: "/support" },
           { label: "รายงาน", path: "/report" },
@@ -89,10 +110,14 @@ export default function BookingHistoryTutorPage() {
       />
 
       <main className="max-w-7xl mx-auto px-6 py-12">
-        <h1 className="text-4xl font-bold text-center mb-8">ประวัติการจอง (ติวเตอร์)</h1>
+        <h1 className="text-4xl font-bold text-center mb-8">
+          ประวัติการจอง (ติวเตอร์)
+        </h1>
 
         <section className="mb-12">
-          <h2 className="text-2xl font-semibold mb-4">การจองที่ยังไม่ถูกยกเลิก</h2>
+          <h2 className="text-2xl font-semibold mb-4">
+            การจองที่ยังไม่ถูกยกเลิก
+          </h2>
           {active.length === 0 ? (
             <p className="text-gray-500">ยังไม่มีรายการ</p>
           ) : (
@@ -101,9 +126,9 @@ export default function BookingHistoryTutorPage() {
                 <BookingCard
                   key={b.booking_id}
                   booking={b}
-                  isTutorView={true}
-                  onConfirm={() => mutateStatus(b.booking_id, "confirmed")}
-                  onReject={() => mutateStatus(b.booking_id, "cancelled")}
+                  isTutorView
+                  onConfirm={() => handleConfirm(b.booking_id)}
+                  onReject={() => handleReject(b.booking_id)}
                   actingOn={actingOn === b.booking_id}
                 />
               ))}
@@ -113,13 +138,15 @@ export default function BookingHistoryTutorPage() {
 
         {cancelled.length > 0 && (
           <section>
-            <h2 className="text-2xl font-semibold mb-4 text-red-600">การจองที่ยกเลิกแล้ว</h2>
+            <h2 className="text-2xl font-semibold mb-4 text-red-600">
+              การจองที่ยกเลิกแล้ว
+            </h2>
             <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
               {cancelled.map((b) => (
                 <BookingCard
                   key={b.booking_id}
                   booking={b}
-                  isTutorView={true}
+                  isTutorView
                   isCancelled
                 />
               ))}
@@ -131,12 +158,18 @@ export default function BookingHistoryTutorPage() {
   );
 }
 
-function BookingCard({ booking, isTutorView, isCancelled, onConfirm, onReject, actingOn }) {
+function BookingCard({
+  booking,
+  isTutorView,
+  isCancelled,
+  onConfirm,
+  onReject,
+  actingOn,
+}) {
   const {
-    booking_id,
     course = {},
-    tutor = {},
     student,
+    tutor = {},
     booking_date,
     total_amount,
     status,
@@ -147,27 +180,40 @@ function BookingCard({ booking, isTutorView, isCancelled, onConfirm, onReject, a
 
   const profile = isTutorView
     ? student
-    : tutor?.user || {
+    : tutor.user || {
         name: tutor.name || "-",
         surname: tutor.surname || "",
         profile_image: tutor.profile_image || "/default-profile.png",
       };
 
-  const avatarSrc = profile?.profile_image || "/default-profile.png";
-  const profileName = `${profile?.name || "-"} ${profile?.surname || ""}`;
+  const profileName = `${profile?.name ?? "-"} ${profile?.surname ?? ""}`;
+  const avatarSrc = profile?.profile_image ?? "/default-profile.png";
 
-  const statusText = isCancelled
-    ? "ยกเลิกแล้ว"
-    : status === "confirmed"
-    ? "ยืนยันแล้ว รอชำระเงิน"
-    : "รอยืนยัน";
+  let labelText = "";
+  let labelColor = "";
+
+  if (isCancelled) {
+    labelText = "ยกเลิกแล้ว";
+    labelColor = "bg-red-100 text-red-800";
+  } else if (status === "pending") {
+    labelText = "รอยืนยัน";
+    labelColor = "bg-gray-100 text-gray-800";
+  } else if (status === "confirmed") {
+    labelText = "ยืนยันแล้ว";
+    labelColor = "bg-green-100 text-green-800";
+  }
 
   return (
     <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col justify-between">
       <div className="space-y-3">
         <div className="flex items-center space-x-3 mb-2">
           <div className="w-10 h-10 relative rounded-full overflow-hidden">
-            <Image src={avatarSrc} fill className="object-cover" alt={profileName} />
+            <Image
+              src={avatarSrc}
+              fill
+              className="object-cover"
+              alt={profileName}
+            />
           </div>
           <div>
             <p className="font-medium">{profileName}</p>
@@ -185,11 +231,15 @@ function BookingCard({ booking, isTutorView, isCancelled, onConfirm, onReject, a
         <p className="text-gray-600">{total_amount} ฿</p>
       </div>
 
-      <div className="mt-6 flex items-center justify-end space-x-2">
-        {isCancelled ? (
-          <span className="px-4 py-1 bg-red-100 text-red-800 rounded-full">ยกเลิกแล้ว</span>
-        ) : (
-          <>
+      <div className="mt-6 flex items-center justify-between">
+        <span
+          className={`px-4 py-1 rounded-full text-sm font-medium ${labelColor}`}
+        >
+          {labelText}
+        </span>
+
+        {status === "pending" && isTutorView && !isCancelled && (
+          <div className="space-x-2">
             <button
               onClick={onConfirm}
               disabled={actingOn}
@@ -204,7 +254,7 @@ function BookingCard({ booking, isTutorView, isCancelled, onConfirm, onReject, a
             >
               {actingOn ? "กำลัง..." : "❌ ปฏิเสธ"}
             </button>
-          </>
+          </div>
         )}
       </div>
     </div>

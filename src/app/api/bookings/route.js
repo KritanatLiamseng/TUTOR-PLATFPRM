@@ -106,6 +106,7 @@ export async function POST(request) {
     const body = await request.json();
     const { student_id, tutor_id, course_id, booking_date, end_time, total_amount } = body;
 
+    // ตรวจสอบข้อมูลที่จำเป็น
     if (!student_id || !tutor_id || !course_id || !booking_date || !end_time || typeof total_amount !== "number") {
       return NextResponse.json(
         { error: "กรุณาระบุข้อมูลให้ครบถ้วน" },
@@ -113,13 +114,25 @@ export async function POST(request) {
       );
     }
 
+    // เช็กวันที่ให้ไม่สามารถจองย้อนหลังได้
+    const now = new Date();
+    const bookingDate = new Date(booking_date);
+    
+    if (bookingDate < now) {
+      return NextResponse.json(
+        { error: "ไม่สามารถจองย้อนหลังได้" },
+        { status: 400 }
+      );
+    }
+
+    // สร้างการจอง
     const booking = await prisma.booking.create({
       data: {
         student_id: Number(student_id),
         tutor_id: Number(tutor_id),
         course_id: Number(course_id),
-        booking_date: new Date(booking_date),
-        start_time: new Date(booking_date),
+        booking_date: bookingDate,
+        start_time: bookingDate,
         end_time: new Date(end_time),
         total_amount: Number(total_amount),
         status: "pending",

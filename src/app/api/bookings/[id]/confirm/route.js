@@ -1,22 +1,25 @@
+// src/app/api/bookings/[id]/confirm/route.js
 import { NextResponse } from "next/server";
 import prisma from "@/prisma/client";
 
-export async function PATCH(request, { params }) {
-  const bookingId = Number(params.id);
-
-  if (Number.isNaN(bookingId)) {
+export async function POST(request, context) {
+  const { params } = await context;
+  const id = Number(params.id);
+  if (Number.isNaN(id)) {
     return NextResponse.json({ error: "ID ไม่ถูกต้อง" }, { status: 400 });
   }
 
   try {
     const updated = await prisma.booking.update({
-      where: { booking_id: bookingId },
+      where: { booking_id: id },
       data: { status: "confirmed" },
     });
-
-    return NextResponse.json(updated);
-  } catch (error) {
-    console.error("❌ ยืนยันล้มเหลว:", error);
-    return NextResponse.json({ error: "เกิดข้อผิดพลาด" }, { status: 500 });
+    return NextResponse.json({ success: true, booking: updated });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json(
+      { error: "ยืนยันการจองไม่สำเร็จ" },
+      { status: 500 }
+    );
   }
 }

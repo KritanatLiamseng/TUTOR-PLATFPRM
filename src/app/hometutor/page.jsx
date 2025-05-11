@@ -24,8 +24,8 @@ export default function HomeTutorPage() {
   const [user, setUser] = useState(null);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showMore, setShowMore] = useState(false);
 
-  // โหลดข้อมูล tutor และคอร์ส
   useEffect(() => {
     const userId = localStorage.getItem("userId");
     if (!userId) {
@@ -34,7 +34,7 @@ export default function HomeTutorPage() {
     }
 
     Promise.all([
-      fetch(`/api/user/${userId}`).then((res) => res.json()),
+      fetch(`/api/tutor/${userId}`).then((res) => res.json()),
       fetch(`/api/tutor/${userId}/courses`).then((res) => res.json()),
     ])
       .then(([userData, courseData]) => {
@@ -69,7 +69,7 @@ export default function HomeTutorPage() {
   };
 
   const menuItems = [
-    { label: "ประวัติการจอง", path: "/booking-historytutor", icon: <FaHistory /> },
+    { label: "ประวัติการจอง", path: "/booking-history-tutor", icon: <FaHistory /> },
     { label: "บัญชีของฉัน", path: "/hometutor", icon: <FaWallet /> },
     { label: "นโยบาย", path: "/policy", icon: <FaFileAlt /> },
     { label: "ศูนย์ช่วยเหลือ", path: "/support", icon: <FaQuestionCircle /> },
@@ -84,14 +84,12 @@ export default function HomeTutorPage() {
     return <p className="text-center mt-10 text-red-500">ไม่พบข้อมูลผู้ใช้</p>;
   }
 
-  // ใช้ userId เดิมเป็น tutorId ใน URL
   const tutorId = localStorage.getItem("userId");
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
       <Header dropdownItems={menuItems} user={user} />
       <div className="max-w-6xl mx-auto py-10 px-4 space-y-8">
-        {/* Profile Card */}
         <div className="bg-white rounded-2xl shadow p-6 flex flex-col md:flex-row items-center gap-6 relative">
           <button
             onClick={() => router.push("/edittutor")}
@@ -111,26 +109,48 @@ export default function HomeTutorPage() {
             <h2 className="text-2xl font-semibold text-gray-800">{user.name}</h2>
             <p className="text-gray-500">ติวเตอร์</p>
             <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-gray-600 text-sm">
-              <div>
-                <FaPhone className="inline mr-1 text-blue-500" />
-                {user.phone || "-"}
-              </div>
-              <div>
-                <FaIdCard className="inline mr-1 text-blue-500" />
-                {user.username}
-              </div>
-              <div>
-                <FaEnvelope className="inline mr-1 text-blue-500" />
-                {user.email}
-              </div>
-              <div>ระดับการศึกษา: {user.education_level || "-"}</div>
+              <div><FaPhone className="inline mr-1 text-blue-500" />{user.phone || "-"}</div>
+              <div><FaIdCard className="inline mr-1 text-blue-500" />{user.username}</div>
+              <div><FaEnvelope className="inline mr-1 text-blue-500" />{user.email}</div>
+              <div>ระดับการศึกษา: {user.education_background || "-"}</div>
               <div>ประสบการณ์: {user.experience_years || 0} ปี</div>
               <div>เวลาที่ว่าง: {user.available_time || "-"}</div>
+              {showMore && (
+                <>
+                  <div className="col-span-2">
+                    <p className="font-semibold text-gray-800">Bio</p>
+                    <p className="text-gray-600 whitespace-pre-wrap">{user.bio || "-"}</p>
+                  </div>
+                  {user.verification_documents && (
+                    <div className="col-span-2">
+                      <p className="font-semibold text-gray-800 mt-2">เอกสารยืนยันตัวตน:</p>
+                      {user.verification_documents.startsWith("data:application/pdf") ? (
+                        <iframe
+                          src={user.verification_documents}
+                          title="Document"
+                          className="w-full h-64 border mt-2"
+                        />
+                      ) : (
+                        <img
+                          src={user.verification_documents}
+                          alt="verification"
+                          className="max-h-64 rounded border mt-2"
+                        />
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
             </div>
+            <button
+              onClick={() => setShowMore((prev) => !prev)}
+              className="mt-4 text-sm text-blue-600 underline"
+            >
+              {showMore ? "ซ่อนข้อมูลเพิ่มเติม" : "แสดงข้อมูลเพิ่มเติม"}
+            </button>
           </div>
         </div>
 
-        {/* Courses Section */}
         <div className="bg-white rounded-2xl shadow p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold text-gray-800">คอร์สที่เปิดสอน</h2>
@@ -155,11 +175,7 @@ export default function HomeTutorPage() {
                     </h3>
                     <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
-                        onClick={() =>
-                          router.push(
-                            `/tutor/${tutorId}/courses/${course.course_id}/edit`
-                          )
-                        }
+                        onClick={() => router.push(`/tutor/${tutorId}/courses/${course.course_id}/edit`)}
                         className="text-blue-500"
                         title="แก้ไข"
                       >
@@ -183,13 +199,8 @@ export default function HomeTutorPage() {
                   <div className="mt-3 flex items-center justify-between text-sm text-gray-700">
                     <span>ราคา: {course.rate_per_hour} บาท/ชม</span>
                     <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-                      {course.teaching_method === "online"
-                        ? "ออนไลน์"
-                        : "ออฟไลน์"}
+                      {course.teaching_method === "online" ? "ออนไลน์" : "ออฟไลน์"}
                     </span>
-                  </div>
-                  <div className="mt-4">
-                   
                   </div>
                 </div>
               ))}

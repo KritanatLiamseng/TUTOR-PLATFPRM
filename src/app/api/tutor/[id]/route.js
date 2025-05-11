@@ -1,9 +1,9 @@
-// ✅ File: src/app/api/tutor/[id]/route.js
 import prisma from "@/prisma/client";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
+// ✅ GET /api/tutor/[id]
 export async function GET(request, context) {
   const params = await context.params;
   const userId = Number(params.id);
@@ -54,6 +54,7 @@ export async function GET(request, context) {
       rate_per_hour: tutor.rate_per_hour,
       available_time: tutor.available_time,
       education_background: tutor.education_background,
+      verification_documents: tutor.verification_documents, // ✅ เพิ่มตรงนี้
       courses: tutor.tutor_courses.map((c) => ({
         course_id: c.course_id,
         title: c.course_title,
@@ -70,6 +71,7 @@ export async function GET(request, context) {
   }
 }
 
+// ✅ PUT /api/tutor/[id]
 export async function PUT(request, context) {
   const params = await context.params;
   const userId = Number(params.id);
@@ -90,12 +92,14 @@ export async function PUT(request, context) {
   const available_time = formData.get("available_time") || "";
   const rate_per_hour = parseFloat(formData.get("rate_per_hour") || "0");
   const bio = formData.get("bio") || "";
-  const imageFile = formData.get("profile_image");
 
   const name = formData.get("name") || "";
   const phone = formData.get("phone") || "";
   const email = formData.get("email") || "";
   const username = formData.get("username") || "";
+
+  const imageFile = formData.get("profile_image");
+  const documentFile = formData.get("verification_documents");
 
   const tutorUpdateData = {
     education_background: education_level,
@@ -112,12 +116,22 @@ export async function PUT(request, context) {
     username,
   };
 
+  // ✅ รูปโปรไฟล์
   if (imageFile && typeof imageFile === "object" && "arrayBuffer" in imageFile) {
     const buffer = Buffer.from(await imageFile.arrayBuffer());
     const base64 = buffer.toString("base64");
     const mimeType = imageFile.type;
     const dataUrl = `data:${mimeType};base64,${base64}`;
     userUpdateData.profile_image = dataUrl;
+  }
+
+  // ✅ เอกสารยืนยัน
+  if (documentFile && typeof documentFile === "object" && "arrayBuffer" in documentFile) {
+    const buffer = Buffer.from(await documentFile.arrayBuffer());
+    const base64 = buffer.toString("base64");
+    const mimeType = documentFile.type;
+    const dataUrl = `data:${mimeType};base64,${base64}`;
+    tutorUpdateData.verification_documents = dataUrl;
   }
 
   try {

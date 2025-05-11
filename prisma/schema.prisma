@@ -1,65 +1,60 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
-}
-
-model Tutor {
-  tutor_id               Int     @id @default(autoincrement())
-  user_id                Int     @unique
-  bio                    String?
-  experience_years       Int?
-  rate_per_hour          Float?
-  available_time         String?
-  is_active              Boolean @default(true)
-  verification_documents String?
-  education_background   String?
-  rating_average         Float?
-
-  user          User          @relation(fields: [user_id], references: [user_id])
-  tutor_courses TutorCourse[]
-
-  bookings Booking[] // แมป relation ไปยัง Booking.tutor
-
-  @@map("tutors")
-}
-
 model User {
-  user_id         Int      @id @default(autoincrement())
+  user_id         Int        @id @default(autoincrement())
   name            String
   surname         String
-  email           String   @unique
+  email           String     @unique
   phone           String?
-  username        String   @unique
+  username        String     @unique
   password        String
-  role            String   @default("student")
-  status          String   @default("Pending")
   profile_image   String?
   education_level String?
-  created_at      DateTime @default(now())
-
-  tutor Tutor?
-
-  bookings Booking[] // แมป relation ไปยัง Booking.student
+  created_at      DateTime   @default(now())
+  status          String     @default("Pending")
+  role            role_enum? @default(student)
+  isSuspended     Boolean    @default(false)
+  bookings        Booking[]
+  tutor           Tutor?
 
   @@map("users")
 }
 
-model Subject {
-  subject_id  Int     @id @default(autoincrement())
-  name        String
-  description String?
+model Tutor {
+  tutor_id               Int           @id @default(autoincrement())
+  user_id                Int           @unique
+  bio                    String?
+  experience_years       Int?
+  rate_per_hour          Float?
+  available_time         String?
+  is_active              Boolean       @default(true)
+  verification_documents String?
+  education_background   String?
+  rating_average         Float?
+  bookings               Booking[]
+  tutor_courses          TutorCourse[]
+  user                   User           @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  @@map("tutors")
+}
 
+model Subject {
+  subject_id   Int           @id @default(autoincrement())
+  name         String
+  description  String?
   tutorCourses TutorCourse[]
 
   @@map("subjects")
 }
 
 model TutorCourse {
-  course_id          Int     @id @default(autoincrement())
+  course_id          Int       @id @default(autoincrement())
   tutor_id           Int
   subject_id         Int
   course_title       String
@@ -67,54 +62,64 @@ model TutorCourse {
   rate_per_hour      Float?
   teaching_method    String?
   level              String?
-
-  tutor    Tutor     @relation(fields: [tutor_id], references: [tutor_id])
-  subject  Subject   @relation(fields: [subject_id], references: [subject_id])
-  bookings Booking[]
+  bookings           Booking[]
+  subject            Subject   @relation(fields: [subject_id], references: [subject_id])
+  tutor              Tutor     @relation(fields: [tutor_id], references: [tutor_id], onDelete: Cascade)
 
   @@map("tutor_courses")
 }
 
 model Booking {
-  booking_id   Int      @id @default(autoincrement())
+  booking_id   Int                 @id @default(autoincrement())
   student_id   Int
   course_id    Int
   booking_date DateTime
-  status       String
   tutor_id     Int
-  total_amount  Decimal   @db.Decimal(10, 2) // ✅ เปลี่ยนจาก Float เป็น Decimal
-
-  start_time    DateTime? // ✅ เพิ่มใหม่
-  end_time      DateTime? // ✅ เพิ่มใหม่
-
-  student User        @relation(fields: [student_id], references: [user_id])
-  tutor   Tutor       @relation(fields: [tutor_id], references: [tutor_id])
-  course  TutorCourse @relation(fields: [course_id], references: [course_id], onDelete: Cascade)
-
-   payments Payment[]
-  chats    Chat[]
+  total_amount Decimal             @db.Decimal(10, 2)
+  end_time     DateTime?
+  start_time   DateTime?
+  status       bookingstatus_enum? @default(pending)
+  chats        Chat[]
+  course       TutorCourse         @relation(fields: [course_id], references: [course_id], onDelete: Cascade)
+  student      User                @relation(fields: [student_id], references: [user_id], onDelete: Cascade)
+  tutor        Tutor               @relation(fields: [tutor_id], references: [tutor_id], onDelete: Cascade)
+  payments     Payment[]
 
   @@map("bookings")
 }
 
 model Payment {
-  payment_id   Int      @id @default(autoincrement())
+  payment_id   Int       @id @default(autoincrement())
   booking_id   Int
-  amount       Decimal  @db.Decimal(10, 2)
+  amount       Decimal   @db.Decimal(10, 2)
   payment_date DateTime
-   paid         Boolean  @default(false)
+  paid         Boolean   @default(false)
   paid_at      DateTime?
+  booking      Booking   @relation(fields: [booking_id], references: [booking_id], onDelete: Cascade)
+  
 
-  booking Booking @relation(fields: [booking_id], references: [booking_id])
   @@map("payments")
 }
 
 model Chat {
-  chat_id     Int      @id @default(autoincrement())
-  booking_id  Int
-  sender_id   Int
-  message     String
-  sent_at     DateTime
+  chat_id    Int      @id @default(autoincrement())
+  booking_id Int
+  sender_id  Int
+  message    String
+  sent_at    DateTime
+  booking    Booking  @relation(fields: [booking_id], references: [booking_id], onDelete: Cascade)
+}
 
-  booking Booking @relation(fields: [booking_id], references: [booking_id])
+enum bookingstatus_enum {
+  pending
+  confirmed
+  completed
+  settled
+  cancelled
+}
+
+enum role_enum {
+  student
+  tutor
+  admin
 }

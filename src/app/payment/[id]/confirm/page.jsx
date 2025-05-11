@@ -30,17 +30,21 @@ export default function PaymentConfirmPage() {
 
     setLoading(true);
 
-    const res = await fetch(`/api/payments/${id}/pay`, { method: "POST" });
-    const data = await res.json();
+    try {
+      const res = await fetch(`/api/payments/${id}/pay`, { method: "POST" });
+      const data = await res.json();
 
-    if (!res.ok) {
-      alert("❌ ชำระเงินไม่สำเร็จ: " + (data.error || "unknown"));
-    } else {
-      alert("✅ ชำระเงินสำเร็จแล้ว");
-      router.push(`/payment/${id}`);
+      if (!res.ok) {
+        alert("❌ ชำระเงินไม่สำเร็จ: " + (data.error || "unknown"));
+      } else {
+        alert("✅ ชำระเงินสำเร็จแล้ว");
+        router.push("/booking-history"); // 👉 กลับไปหน้าประวัติ
+      }
+    } catch (e) {
+      alert("เกิดข้อผิดพลาดในการชำระเงิน");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   if (error) {
@@ -59,11 +63,8 @@ export default function PaymentConfirmPage() {
     );
   }
 
-  // สร้าง URL สำหรับ QR Code โดยใช้ข้อมูลการจอง
   const paymentUrl = `https://example.com/pay/${booking.booking_id}`;
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
-    paymentUrl
-  )}`;
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(paymentUrl)}`;
 
   return (
     <div className="max-w-xl mx-auto p-8 mt-10 bg-white rounded-xl shadow space-y-6">
@@ -84,7 +85,7 @@ export default function PaymentConfirmPage() {
         <button
           disabled={loading}
           onClick={handleConfirm}
-          className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
+          className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-60"
         >
           {loading ? "⏳ กำลังดำเนินการ..." : "✅ ยืนยันการชำระเงิน"}
         </button>

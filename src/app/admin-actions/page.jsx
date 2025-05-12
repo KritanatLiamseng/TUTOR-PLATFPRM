@@ -4,13 +4,13 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 
 export default function AdminActionsHome() {
   const router = useRouter();
-  const [students, setStudents]     = useState([]);
-  const [tutors, setTutors]         = useState([]);
-  const [loadingUsers, setLoading]  = useState(true);
-  const [activeTab, setActiveTab]   = useState("students"); // "students" or "tutors"
+  const [students, setStudents] = useState([]);
+  const [tutors, setTutors] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
@@ -19,110 +19,111 @@ export default function AdminActionsHome() {
       fetch("/api/user?role=tutor").then(r => r.json()),
     ])
       .then(([s, t]) => {
-        setStudents(s || []);
-        setTutors(t || []);
+        setStudents(Array.isArray(s) ? s : []);
+        setTutors(Array.isArray(t) ? t : []);
       })
       .catch(err => {
         console.error(err);
-        alert("❌ โหลดข้อมูลผู้ใช้ล้มเหลว: " + err.message);
+        alert("❌ โหลดข้อมูลล้มเหลว");
       })
       .finally(() => setLoading(false));
   }, []);
 
-  const renderCard = (u, isTutor = false) => (
-    <div
-      key={u.user_id}
-      className="bg-white rounded-lg shadow hover:shadow-lg transition p-6 flex flex-col"
-    >
-      <div className="flex items-center gap-4 mb-4">
-        <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
-          {u.profile_image
-            ? <Image src={u.profile_image} alt="" width={48} height={48} className="object-cover"/>
+  const Card = ({ user, isTutor }) => (
+    <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition p-4 flex flex-col">
+      <div className="flex items-center mb-4">
+        <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-100">
+          {user.profile_image
+            ? <Image src={user.profile_image} alt="" width={56} height={56} className="object-cover" />
             : <div className="w-full h-full bg-gray-200" />}
         </div>
-        <div>
-          <h3 className="font-medium text-lg">{u.name} {u.surname}</h3>
-          {isTutor && u.tutor?.bank_name && (
-            <p className="text-sm text-gray-500">🏦 {u.tutor.bank_name}</p>
+        <div className="ml-3 flex-1">
+          <h3 className="text-lg font-semibold">{user.name} {user.surname}</h3>
+          {isTutor && user.tutor?.bank_name && (
+            <p className="text-sm text-gray-500">🏦 {user.tutor.bank_name}</p>
           )}
         </div>
       </div>
-      <div className="mt-auto flex flex-wrap gap-2">
+      <div className="mt-auto flex justify-between space-x-2">
         <button
-          onClick={() => router.push(`/profile/${u.user_id}`)}
-          className="flex-1 px-3 py-1 text-sm text-gray-700 border rounded hover:bg-gray-100"
+          onClick={() => router.push(`/profile/${user.user_id}`)}
+          className="flex-1 flex items-center justify-center gap-2 px-2 py-1 text-sm text-gray-700 border rounded hover:bg-gray-100"
         >
-          👁️ ดูโปรไฟล์
+          <FaEye /> ดู
         </button>
         <button
-          onClick={() => router.push(`/admin-actions/${u.user_id}`)}
-          className="flex-1 px-3 py-1 text-sm text-blue-600 border border-blue-600 rounded hover:bg-blue-50"
+          onClick={() =>
+            router.push(isTutor
+              ? `/admin-actions/tutor/${user.user_id}`
+              : `/admin-actions/user/${user.user_id}`
+            )
+          }
+          className="flex-1 flex items-center justify-center gap-2 px-2 py-1 text-sm text-blue-600 border border-blue-600 rounded hover:bg-blue-50"
         >
-          ✏️ แก้ไข
+          <FaEdit /> แก้ไข
         </button>
         <button
           onClick={async () => {
-            if (!confirm("ต้องการลบผู้ใช้นี้หรือไม่?")) return;
-            await fetch(`/api/user/${u.user_id}`, { method: "DELETE" });
+            if (!confirm("ลบผู้ใช้หรือไม่?")) return;
+            await fetch(`/api/user/${user.user_id}`, { method: "DELETE" });
             isTutor
-              ? setTutors(ts => ts.filter(x => x.user_id !== u.user_id))
-              : setStudents(ss => ss.filter(x => x.user_id !== u.user_id));
+              ? setTutors(ts => ts.filter(x => x.user_id !== user.user_id))
+              : setStudents(ss => ss.filter(x => x.user_id !== user.user_id));
           }}
-          className="flex-1 px-3 py-1 text-sm text-red-600 border border-red-600 rounded hover:bg-red-50"
+          className="flex-1 flex items-center justify-center gap-2 px-2 py-1 text-sm text-red-600 border border-red-600 rounded hover:bg-red-50"
         >
-          🗑️ ลบ
+          <FaTrash /> ลบ
         </button>
       </div>
     </div>
   );
 
-  const currentList = activeTab === "students" ? students : tutors;
-  const isTutorTab  = activeTab === "tutors";
-
   return (
-    <main className="max-w-7xl mx-auto px-6 py-12">
-      <h1 className="text-3xl font-bold mb-8">แดชบอร์ดผู้ดูแลระบบ</h1>
+    <main className="max-w-7xl mx-auto px-6 py-12 space-y-12">
+      <h1 className="text-4xl font-bold text-center">แดชบอร์ดผู้ดูแลระบบ</h1>
 
-      <div className="flex space-x-4 mb-8">
-        <button
-          onClick={() => setActiveTab("students")}
-          className={`px-4 py-2 rounded-lg ${
-            activeTab === "students"
-              ? "bg-blue-600 text-white"
-              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-          }`}
-        >
-          👨‍🎓 นักเรียน ({students.length})
-        </button>
-        <button
-          onClick={() => setActiveTab("tutors")}
-          className={`px-4 py-2 rounded-lg ${
-            activeTab === "tutors"
-              ? "bg-blue-600 text-white"
-              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-          }`}
-        >
-          👩‍🏫 ติวเตอร์ ({tutors.length})
-        </button>
+      <div className="text-right">
         <button
           onClick={() => router.push("/admin-actions/bookings/all")}
-          className="ml-auto px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700"
+          className="inline-block text-blue-600 hover:underline"
         >
           📑 ดูรายการจองทั้งหมด
         </button>
       </div>
 
-      {loadingUsers ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-40 bg-gray-200 animate-pulse rounded-lg" />
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {currentList.map(u => renderCard(u, isTutorTab))}
-        </div>
-      )}
+      <section>
+        <h2 className="text-2xl font-semibold mb-4">👨‍🎓 นักเรียน</h2>
+        {loading
+          ? <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="animate-pulse h-48 bg-white rounded-xl shadow"
+                />
+              ))}
+            </div>
+          : <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {students.map(u => <Card key={u.user_id} user={u} isTutor={false} />)}
+            </div>
+        }
+      </section>
+
+      <section>
+        <h2 className="text-2xl font-semibold mb-4">👩‍🏫 ติวเตอร์</h2>
+        {loading
+          ? <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="animate-pulse h-48 bg-white rounded-xl shadow"
+                />
+              ))}
+            </div>
+          : <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {tutors.map(u => <Card key={u.user_id} user={u} isTutor={true} />)}
+            </div>
+        }
+      </section>
     </main>
   );
 }

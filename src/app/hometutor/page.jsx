@@ -70,7 +70,7 @@ export default function HomeTutorPage() {
 
   const menuItems = [
     { label: "ประวัติการจอง", path: "/booking-history-tutor", icon: <FaHistory /> },
-    { label: "บัญชีของฉัน", path: "/hometutor", icon: <FaWallet /> },
+    { label: "บัญชีของฉัน", path: "/wallet", icon: <FaWallet /> },
     { label: "นโยบาย", path: "/policy", icon: <FaFileAlt /> },
     { label: "ศูนย์ช่วยเหลือ", path: "/support", icon: <FaQuestionCircle /> },
     { label: "รายงาน", path: "/report", icon: <FaInfoCircle /> },

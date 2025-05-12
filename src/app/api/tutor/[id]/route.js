@@ -1,153 +1,100 @@
-import prisma from "@/prisma/client";
+// src/app/api/tutor/[id]/route.js
 import { NextResponse } from "next/server";
+import prisma from "@/prisma/client";
 
-export const dynamic = "force-dynamic";
 
-// ✅ GET /api/tutor/[id]
-export async function GET(request, context) {
-  const params = await context.params;
+async function parseRequest(request) {
+  const contentType = request.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) {
+    return await request.json();
+  }
+  const form = await request.formData();
+  const out = {};
+  for (const [key, val] of form.entries()) {
+    out[key] = val;
+  }
+  return out;
+}
+
+// PUT /api/tutor/:id
+export async function PUT(request, { params }) {
   const userId = Number(params.id);
-
   if (Number.isNaN(userId)) {
     return NextResponse.json({ error: "ID ไม่ถูกต้อง" }, { status: 400 });
   }
 
+  let body;
   try {
-    const userWithTutor = await prisma.user.findUnique({
+    body = await parseRequest(request);
+  } catch {
+    return NextResponse.json({ error: "ข้อมูลไม่ถูกต้อง" }, { status: 400 });
+  }
+
+  const userData = {
+    name:     body.name,
+    phone:    body.phone,
+    email:    body.email,
+    username: body.username,
+  };
+  const tutorData = {
+    bio:                   body.bio,
+    experience_years:      body.experience_years ? Number(body.experience_years) : undefined,
+    rate_per_hour:         body.rate_per_hour    ? Number(body.rate_per_hour)    : undefined,
+    available_time:        body.available_time,
+    education_background:  body.education_level,
+    bank_name:             body.bank_name,
+    bank_account_number:   body.bank_account_number,
+    bank_account_name:     body.bank_account_name,
+  };
+
+  // ถ้ามีไฟล์ อัปโหลด แปลงเป็น data URL
+  if (body.profile_image && body.profile_image instanceof File) {
+    const buf = Buffer.from(await body.profile_image.arrayBuffer());
+    userData.profile_image = `data:${body.profile_image.type};base64,${buf.toString("base64")}`;
+  }
+  if (body.verification_documents && body.verification_documents instanceof File) {
+    const buf = Buffer.from(await body.verification_documents.arrayBuffer());
+    tutorData.verification_documents = `data:${body.verification_documents.type};base64,${buf.toString("base64")}`;
+  }
+
+  try {
+    // อัปเดต tutor ก่อน (cascade ไป user)
+    await prisma.tutor.update({
       where: { user_id: userId },
-      include: {
-        tutor: {
-          include: {
-            tutor_courses: {
-              select: {
-                course_id: true,
-                course_title: true,
-                rate_per_hour: true,
-                teaching_method: true,
-                level: true,
-                subject: {
-                  select: { subject_id: true, name: true },
-                },
-              },
-            },
-          },
-        },
-      },
+      data:  tutorData,
     });
-
-    if (!userWithTutor?.tutor) {
-      return NextResponse.json({ error: "ไม่พบบัญชีติวเตอร์" }, { status: 404 });
-    }
-
-    const { tutor } = userWithTutor;
-    return NextResponse.json({
-      user_id: userWithTutor.user_id,
-      name: userWithTutor.name,
-      surname: userWithTutor.surname,
-      email: userWithTutor.email,
-      phone: userWithTutor.phone,
-      username: userWithTutor.username,
-      profile_image: userWithTutor.profile_image,
-      tutor_id: tutor.tutor_id,
-      bio: tutor.bio,
-      experience_years: tutor.experience_years,
-      rate_per_hour: tutor.rate_per_hour,
-      available_time: tutor.available_time,
-      education_background: tutor.education_background,
-      verification_documents: tutor.verification_documents, // ✅ เพิ่มตรงนี้
-      courses: tutor.tutor_courses.map((c) => ({
-        course_id: c.course_id,
-        title: c.course_title,
-        rate: c.rate_per_hour,
-        method: c.teaching_method,
-        level: c.level,
-        subject_id: c.subject.subject_id,
-        subject_name: c.subject.name,
-      })),
+    await prisma.user.update({
+      where: { user_id: userId },
+      data:  userData,
     });
-  } catch (err) {
-    console.error("❌ ดึงข้อมูลติวเตอร์ล้มเหลว:", err);
-    return NextResponse.json({ error: "เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์" }, { status: 500 });
+    return NextResponse.json({ success: true });
+  } catch (e) {
+    console.error("PUT /api/tutor/[id] error:", e);
+    return NextResponse.json({ error: "อัปเดตไม่สำเร็จ" }, { status: 500 });
   }
 }
 
-// ✅ PUT /api/tutor/[id]
-export async function PUT(request, context) {
-  const params = await context.params;
+// GET /api/tutor/:id
+export async function GET(_request, { params }) {
   const userId = Number(params.id);
-
   if (Number.isNaN(userId)) {
     return NextResponse.json({ error: "ID ไม่ถูกต้อง" }, { status: 400 });
   }
-
-  let formData;
   try {
-    formData = await request.formData();
-  } catch {
-    return NextResponse.json({ error: "ข้อมูล Form ไม่ถูกต้อง" }, { status: 400 });
-  }
-
-  const education_level = formData.get("education_level") || "";
-  const experience_years = parseInt(formData.get("experience_years") || "0", 10);
-  const available_time = formData.get("available_time") || "";
-  const rate_per_hour = parseFloat(formData.get("rate_per_hour") || "0");
-  const bio = formData.get("bio") || "";
-
-  const name = formData.get("name") || "";
-  const phone = formData.get("phone") || "";
-  const email = formData.get("email") || "";
-  const username = formData.get("username") || "";
-
-  const imageFile = formData.get("profile_image");
-  const documentFile = formData.get("verification_documents");
-
-  const tutorUpdateData = {
-    education_background: education_level,
-    experience_years,
-    available_time,
-    rate_per_hour,
-    bio,
-  };
-
-  const userUpdateData = {
-    name,
-    phone,
-    email,
-    username,
-  };
-
-  // ✅ รูปโปรไฟล์
-  if (imageFile && typeof imageFile === "object" && "arrayBuffer" in imageFile) {
-    const buffer = Buffer.from(await imageFile.arrayBuffer());
-    const base64 = buffer.toString("base64");
-    const mimeType = imageFile.type;
-    const dataUrl = `data:${mimeType};base64,${base64}`;
-    userUpdateData.profile_image = dataUrl;
-  }
-
-  // ✅ เอกสารยืนยัน
-  if (documentFile && typeof documentFile === "object" && "arrayBuffer" in documentFile) {
-    const buffer = Buffer.from(await documentFile.arrayBuffer());
-    const base64 = buffer.toString("base64");
-    const mimeType = documentFile.type;
-    const dataUrl = `data:${mimeType};base64,${base64}`;
-    tutorUpdateData.verification_documents = dataUrl;
-  }
-
-  try {
-    await prisma.tutor.update({
-      where: { user_id: userId },
-      data: tutorUpdateData,
+    const userWithTutor = await prisma.user.findUnique({
+      where:   { user_id: userId },
+      include: { tutor: true },
     });
-
-    await prisma.user.update({
-      where: { user_id: userId },
-      data: userUpdateData,
+    if (!userWithTutor?.tutor) {
+      return NextResponse.json({ error: "ไม่พบติวเตอร์" }, { status: 404 });
+    }
+    // รวมข้อมูล user + tutor เป็น payload เดียว
+    return NextResponse.json({
+      ...userWithTutor,
+      ...userWithTutor.tutor,
     });
-
-    return NextResponse.json({ success: true });
-  } catch (err) {
-    console.error("❌ PUT /api/tutor/[id] failed:", err);
-    return NextResponse.json({ error: "ไม่สามารถอัปเดตโปรไฟล์ได้" }, { status: 500 });
+  } catch (e) {
+    console.error("GET /api/tutor/[id] error:", e);
+    return NextResponse.json({ error: "โหลดไม่สำเร็จ" }, { status: 500 });
   }
 }

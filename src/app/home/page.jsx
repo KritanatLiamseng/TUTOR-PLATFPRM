@@ -1,4 +1,4 @@
-// File: src/app/home/page.jsx หรือ wherever your HomePage อยู่
+// File: src/app/home/page.jsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -7,62 +7,48 @@ import Header from "@/app/components/header";
 import { FaSearch, FaStar, FaBook } from "react-icons/fa";
 
 export default function HomePage() {
-  const router       = useRouter();
+  const router = useRouter();
   const searchParams = useSearchParams();
 
   // อ่าน ?subject= จาก URL
   const subjectParam = searchParams.get("subject");
-  const subjectId    = subjectParam ? Number(subjectParam) : null;
+  const subjectId = subjectParam ? Number(subjectParam) : null;
 
-  const [user, setUser]           = useState(null);
-  const [tutors, setTutors]       = useState([]);
-  const [subjects, setSubjects]   = useState([]);
-  const [searchQ, setSearchQ]     = useState("");
+  const [user, setUser] = useState(null);
+  const [tutors, setTutors] = useState([]);
+  const [subjects, setSubjects] = useState([]);
+  const [searchQ, setSearchQ] = useState("");
 
   // โหลดข้อมูล user
   useEffect(() => {
     const uid = localStorage.getItem("userId");
     if (uid) {
       fetch(`/api/user/${uid}`)
-        .then((r) => r.json())
+        .then(r => r.json())
         .then(setUser)
         .catch(console.error);
     }
   }, []);
 
-  // โหลดติวเตอร์
-  useEffect(() => {
-    fetch("/api/tutors")
-      .then((r) => r.json())
-      .then((data) => setTutors(Array.isArray(data) ? data : []))
-      .catch(console.error);
-  }, []);
-
   // โหลดหมวดหมู่วิชา
   useEffect(() => {
     fetch("/api/subjects")
-      .then((r) => r.json())
-      .then((data) => setSubjects(Array.isArray(data) ? data : []))
+      .then(r => r.json())
+      .then(data => setSubjects(Array.isArray(data) ? data : []))
       .catch(console.error);
   }, []);
 
-  // รวมเงื่อนไขกรอง: ทั้ง search text และ subject filter
-  const displayTutors = tutors.filter((t) => {
-    // 1) ถ้ามี searchQ ให้กรองชื่อหรือ bio
-    const q = searchQ.trim().toLowerCase();
-    const matchSearch = !q
-      ? true
-      : t.name.toLowerCase().includes(q) ||
-        (t.bio || "").toLowerCase().includes(q);
+  // โหลดติวเตอร์ผ่าน /api/search เมื่อ searchQ หรือ subjectId เปลี่ยน
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (searchQ.trim()) params.set("q", searchQ.trim());
+    if (subjectId != null) params.set("subject", String(subjectId));
 
-    // 2) ถ้ามี subjectId ให้กรอง tutor ที่มี subject_ids รวมวิชานั้น
-    //   สมมติ API คืนมาเป็น t.subject_ids = [1,2,3]
-    const matchSubject = subjectId == null
-      ? true
-      : Array.isArray(t.subject_ids) && t.subject_ids.includes(subjectId);
-
-    return matchSearch && matchSubject;
-  });
+    fetch(`/api/search?${params.toString()}`)
+      .then(r => r.json())
+      .then(data => setTutors(Array.isArray(data) ? data : []))
+      .catch(console.error);
+  }, [searchQ, subjectId]);
 
   const menuItems = [
     { label: "ประวัติการจอง", path: "/booking-history" },
@@ -96,7 +82,7 @@ export default function HomePage() {
               type="text"
               placeholder="ค้นหาชื่อติวเตอร์หรือวิชา..."
               value={searchQ}
-              onChange={(e) => setSearchQ(e.target.value)}
+              onChange={e => setSearchQ(e.target.value)}
               className="w-full pl-10 pr-4 py-3 rounded-full border border-gray-300 focus:ring-2 focus:ring-blue-400"
             />
           </div>
@@ -110,7 +96,7 @@ export default function HomePage() {
           <h2 className="text-xl font-bold text-blue-800">หมวดหมู่วิชาหลัก</h2>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {subjects.map((subj) => {
+          {subjects.map(subj => {
             const isActive = String(subj.subject_id) === subjectParam;
             return (
               <button
@@ -134,38 +120,41 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ติวเตอร์แนะนำ หรือ ผลลัพธ์ค้นหา/กรองวิชา */}
+      {/* ผลลัพธ์ค้นหา/กรองวิชา */}
       <section className="px-6 py-10 max-w-6xl mx-auto">
         <h2 className="text-2xl font-bold text-center mb-8">
           {searchQ.trim()
             ? "ผลลัพธ์การค้นหา"
             : subjectId != null
             ? `ติวเตอร์สอนวิชา: ${
-                subjects.find((s) => s.subject_id === subjectId)?.name || ""
+                subjects.find(s => s.subject_id === subjectId)?.name || ""
               }`
             : "ติวเตอร์แนะนำ"}
         </h2>
 
-        {displayTutors.length === 0 && (
+        {tutors.length === 0 && (
           <p className="text-center text-gray-500">ไม่พบผลลัพธ์</p>
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-          {displayTutors.map((tutor) => (
+          {tutors.map(tutor => (
             <div
-              key={tutor.id}
+              key={tutor.tutorId}
               className="bg-white rounded-xl shadow p-6 flex flex-col"
             >
               {/* Avatar + Name */}
               <div className="flex items-center mb-4">
                 <img
-                  src={tutor.profile_image}
+                  src={tutor.avatar || "/default-profile.png"}
                   alt="avatar"
                   className="w-10 h-10 rounded-full object-cover"
                 />
                 <div className="ml-3">
                   <p className="font-semibold">{tutor.name}</p>
-                  <p className="text-sm text-gray-500">{tutor.bio}</p>
+                  <p className="text-sm text-gray-500">
+                    {/* กันกรณี tutor.courses undefined */}
+                    {(tutor.courses || []).map(c => c.subject).join(", ") || "-"}
+                  </p>
                 </div>
               </div>
 
@@ -174,16 +163,16 @@ export default function HomePage() {
                 <span className="flex items-center text-yellow-500">
                   <FaStar />
                   <span className="ml-1">
-                    {tutor.rating_average.toFixed(1)}
+                    {tutor.rating_average?.toFixed(1) || "-"}
                   </span>
                 </span>
                 <span className="font-medium">
-                  {tutor.rate_per_hour} ฿/ชม
+                  {tutor.rate?.toLocaleString() || "-"} ฿/ชม
                 </span>
               </div>
 
               <button
-                onClick={() => router.push(`/tutor/${tutor.id}`)}
+                onClick={() => router.push(`/tutor/${tutor.tutorId}`)}
                 className="mt-auto bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg"
               >
                 ดูโปรไฟล์ติวเตอร์

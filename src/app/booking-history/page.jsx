@@ -99,11 +99,16 @@ export default function BookingHistoryPage() {
     <div className="min-h-screen bg-gray-50">
       <Header
         dropdownItems={[
-          { label: "หน้าหลัก", path: "/" },
-          { label: "การจอง", path: "/booking-history" },
-          { label: "ออกจากระบบ", onClick: () => {
-              localStorage.clear();
-              router.push("/login");
+          { label: "ประวัติการจอง", path: "/booking-history" },
+    { label: "บัญชีของฉัน", path: "/studentprofile" },
+    { label: "นโยบาย", path: "/policy" },
+    { label: "ศูนย์ช่วยเหลือ", path: "/support" },
+    { label: "รายงาน", path: "/report" },
+    {
+      label: "ออกจากระบบ",
+      onClick: () => {
+        localStorage.removeItem("userId");
+        router.push("/login");
             } 
           },
         ]}

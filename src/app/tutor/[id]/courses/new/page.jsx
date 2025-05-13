@@ -89,7 +89,7 @@ export default function NewCoursePage() {
       <Header dropdownItems={menuItems} />
 
       <div className="max-w-3xl mx-auto py-8 px-6">
-        <BackButton>← ย้อนกลับ</BackButton>
+        <BackButton> ย้อนกลับ</BackButton>
         <div className="bg-white rounded-2xl shadow-lg p-8 mt-4">
           <h2 className="text-2xl font-semibold mb-6">➕ เพิ่มคอร์สใหม่</h2>
 

@@ -55,7 +55,7 @@ export default function HomePage() {
     { label: "บัญชีของฉัน", path: "/studentprofile" },
     { label: "นโยบาย", path: "/policy" },
     { label: "ศูนย์ช่วยเหลือ", path: "/support" },
-    { label: "รายงาน", path: "/report" },
+    
     {
       label: "ออกจากระบบ",
       onClick: () => {

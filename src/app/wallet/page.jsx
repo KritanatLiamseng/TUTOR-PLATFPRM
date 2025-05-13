@@ -74,13 +74,17 @@ export default function WalletPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header
-        dropdownItems={[
-          { label: "หน้าหลัก", path: "/" },
-          { label: "กระเป๋าเงิน", path: "/wallet" },
+        dropdownItems={[ 
+          { label: "หน้าหลัก", path: "/hometutor" },
+          { label: "การจอง", path: "/booking-history-tutor" },
+          { label: "นโยบาย", path: "/policy" },
+          { label: "ศูนย์ช่วยเหลือ", path: "/support" },
+          { label: "รายงาน", path: "/report" },
           {
             label: "ออกจากระบบ",
             onClick: () => {
-              localStorage.clear();
+              localStorage.removeItem("userId");
+              localStorage.removeItem("role");
               router.push("/login");
             },
           },
@@ -88,20 +92,8 @@ export default function WalletPage() {
         user={user}
       />
       <main className="max-w-lg mx-auto p-6 bg-white rounded shadow space-y-6">
-        <div className="flex justify-between">
-          <div>
-            <p className="text-gray-500">พร้อมใช้</p>
-            <p className="text-2xl">{wallet.balance} ฿</p>
-          </div>
-          <FaWallet className="text-4xl text-green-600" />
-        </div>
-        <div className="flex justify-between">
-          <div>
-            <p className="text-gray-500">รอดำเนินการ</p>
-            <p className="text-xl">{wallet.pending} ฿</p>
-          </div>
-          <FaUniversity className="text-4xl text-yellow-600" />
-        </div>
+        
+          
 
         {user.role === "tutor" && (
           <>

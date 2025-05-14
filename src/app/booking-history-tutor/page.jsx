@@ -93,10 +93,9 @@ export default function BookingHistoryTutorPage() {
       <Header
         dropdownItems={[ 
           { label: "หน้าหลัก", path: "/hometutor" },
-          { label: "การจอง", path: "/booking-history-tutor" },
+          { label: "ประวัติการจอง", path: "/booking-history-tutor" },
           { label: "นโยบาย", path: "/policy" },
           { label: "ศูนย์ช่วยเหลือ", path: "/support" },
-          { label: "รายงาน", path: "/report" },
           {
             label: "ออกจากระบบ",
             onClick: () => {

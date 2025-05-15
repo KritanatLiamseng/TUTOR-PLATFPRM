@@ -103,11 +103,8 @@ export default function StudentProfilePage() {
                 label="ชื่อผู้ใช้"
                 value={profile.username || '-'}
               />
-              <InfoItem
-                icon={<FaUniversity />}
-                label="สาขาวิชา"
-                value={profile.major || '-'}
-              />
+              
+              
             </div>
           </div>
         </div>

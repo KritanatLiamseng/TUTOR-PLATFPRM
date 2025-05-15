@@ -1,3 +1,4 @@
+// File: src/app/api/bookings/[id]/route.js
 import { NextResponse } from "next/server";
 import prisma from "@/prisma/client";
 
@@ -41,8 +42,7 @@ export async function GET(_request, contextPromise) {
             },
           },
         },
-        payments: true,
-        chats: true,
+        payments: true,   // เอา chats ออก เหลือแค่ payments
       },
     });
 
@@ -64,7 +64,7 @@ export async function GET(_request, contextPromise) {
       payments: booking.payments.map(p => ({
         ...p,
         amount: Number(p.amount)
-      }))
+      })),
     };
 
     return NextResponse.json(result);
@@ -101,7 +101,7 @@ export async function PUT(request, contextPromise) {
       data: { status },
     });
 
-    // ✅ เมื่อเปลี่ยนสถานะเป็น completed ให้จ่ายเงินให้ติวเตอร์ทันที (mock-up)
+    // เมื่อเปลี่ยนสถานะเป็น completed ให้จ่ายเงินให้ติวเตอร์ทันที (mock-up)
     if (status === "completed") {
       await prisma.payment.updateMany({
         where: {

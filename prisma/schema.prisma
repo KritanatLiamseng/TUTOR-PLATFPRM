@@ -82,13 +82,14 @@ model Booking {
   end_time     DateTime?
   start_time   DateTime?
   status       bookingstatus_enum? @default(pending)
-  chats        Chat[]
   course       TutorCourse         @relation(fields: [course_id], references: [course_id], onDelete: Cascade)
   student      User                @relation(fields: [student_id], references: [user_id], onDelete: Cascade)
   tutor        Tutor               @relation(fields: [tutor_id], references: [tutor_id], onDelete: Cascade)
   payments     Payment[]
+  refunded     Boolean             @default(false)
 
   @@map("bookings")
+  
 }
 
 model Payment {
@@ -104,14 +105,7 @@ model Payment {
   @@map("payments")
 }
 
-model Chat {
-  chat_id    Int      @id @default(autoincrement())
-  booking_id Int
-  sender_id  Int
-  message    String
-  sent_at    DateTime
-  booking    Booking  @relation(fields: [booking_id], references: [booking_id], onDelete: Cascade)
-}
+
 
 enum bookingstatus_enum {
   pending
